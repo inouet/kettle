@@ -1,0 +1,33 @@
+{
+    "name": "inouet/kettle",
+    "type": "library",
+    "description": "A lightweight object-dynamodb mapper for PHP5",
+    "keywords": ["kettle", "orm", "dynamodb", "aws"],
+    "homepage": "http://github.com/inouet/",
+    "support": {
+        "issues": "https://github.com/inouet/kettle/issues",
+        "source": "https://github.com/inouet/kettle"
+    },
+    "authors": [
+        {
+            "name": "Taiji Inoue",
+            "email": "inudog@gmail.com",
+            "role": "Maintainer"
+        }
+    ],
+    "license": [
+        "MIT"
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "aws/aws-sdk-php": "2.*",
+        "aws/dynamodb-php-wrapper": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "3.7.*"
+    },
+    "autoload": {
+        "classmap": ["src/kettle.php"]
+    }
+}
+
