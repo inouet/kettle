@@ -2,6 +2,8 @@
 
 namespace Kettle;
 
+use Aws\DynamoDb\DynamoDbClient;
+
 class ORM {
 
     // --------------------------
@@ -42,14 +44,14 @@ class ORM {
      *               'field_name_2' => 'N',
      *               );
      */
-    protected $_schema = [];
+    protected $_schema = array();
 
     /**
      * DynamoDB record data is saved here as an associative array
      *
      * @var array
      */   
-    protected $_data   = [];
+    protected $_data   = array();
 
     // Is this a new object (has create() been called)?
     protected $_is_new = false;
@@ -67,9 +69,9 @@ class ORM {
      * @return object  instance of the ORM sub class
      */
     public function findOne($hash_key_value, $range_key_value = null, $options = array()) {
-        $query = [
+        $query = array(
             $this->_hash_key => $hash_key_value,
-            ];
+        );
 
         if ($range_key_value) {
             if (!$this->_range_key) {
@@ -78,7 +80,19 @@ class ORM {
             $query[$this->_range_key] = $range_key_value;
         }
 
-        $result = self::$_client->get($this->_table_name, $query, $options);
+        $key = $this->_formatAttributes($query);
+        $args = array(
+            'TableName' => $this->_table_name,
+            'Key'       => $key,
+        );
+
+        $item = self::$_client->getItem($args);
+
+        if (!is_array($item['Item'])) {
+            return null;
+        }
+
+        $result = $this->_formatResult($item['Item']);
 
         $class_name = get_called_class();
         $instance = self::factory($class_name);
@@ -90,13 +104,13 @@ class ORM {
      * Retrive multiple results using query
      *
      */
-    public function findMany($query, $options = []) {
+    public function findMany($query, $options = array()) {
 
         // query($tableName, $keyConditions, $options = array())
-        $result = self::$_client->query($this->_table_name, $query, $options);
+        $result = $this->query($query, $options);
 
         // scan($tableName, $filter, $limit = null)
-        $array  = [];
+        $array  = array();
         $class_name = get_called_class();
         foreach ($result as $row) {
             $instance = self::factory($class_name);
@@ -111,52 +125,32 @@ class ORM {
      *
      */
     public function save() {
-        $query  = $this->_getKeyConditions();
         $values = $this->_data;
-
-
-        if (!$this->_is_new) {
-            // remove key field when update
-            foreach ($query as $key => $value) {
-                unset($values[$key]);
-            }
-        }
-
-        $values = $this->_formatValues($values);
 
         if ($this->_is_new) { // insert
             // TODO: Expected support
-            $expected = [];
-
-            // ex)
-            // $values = array(
-            //    "key1::S" => "value",
-            //    "key2::S" => "value",
-            // );
-            $result = self::$_client->put($this->_table_name, $values, $expected);
+            $expected = array();
+            $result = $this->putItem($values, $expected);
         } else { // update
             // TODO: Expected support
-            $expected = [];
-
-            foreach ($values as $key => $value) {
-                $values[$key] = array('PUT', $value);
-            }
-
-            // ex)
-            // $values = array(
-            //    "key1::S" => ["PUT", "value"],
-            //    "key2::S" => ["PUT", "value"],
-            // );
-
-            $result = self::$_client->update($this->_table_name, $query, $values, $expected);
+            $expected = array();
+            $result = $this->updateItem($values, $expected);
         }
 
         return $result;
     }
 
+    // @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_deleteItem
     public function delete() {
-        $query  = $this->_getKeyConditions();
-        $result = self::$_client->delete($this->_table_name, $query);
+        $conditions = $this->_getKeyConditions();
+        $conditions = $this->_formatAttributes($conditions);
+        $args = array(
+            'TableName' => $this->_table_name,
+            'Key' => $conditions,
+            'ReturnValues' => 'ALL_OLD',
+        );
+
+        $result = self::$_client->deleteItem($args);
         return $result;
     }
 
@@ -168,12 +162,12 @@ class ORM {
         return $this->_data[$key];
     }
 
-    public function create($data = []) {
+    public function create($data = array()) {
         $this->_is_new = true;
         return $this->hydrate($data);
     }
 
-    public function hydrate($data = []) {
+    public function hydrate($data = array()) {
         $this->_data = $data;
         return $this;
     }
@@ -181,6 +175,52 @@ class ORM {
     public function getClient() {
         return self::$_client;
     }
+
+    public function query($query, $options = array()) {
+        $args = array(
+            'TableName' => $this->_table_name,
+            'KeyConditions' => $this->_formatConditions($query),
+            'ScanIndexForward' => true,
+            'Limit' => 100,
+        );
+        $result = self::$_client->query($args);
+        
+        return $this->_formatResults($result['Items']);
+    }
+
+    public function putItem($values, $expected = array()) {
+        $args = array(
+            'TableName' => $this->_table_name,
+            'Item'      => $this->_formatAttributes($values),
+        );
+        if (!empty($expected)) {
+            $args['Expected'] = $expected;
+        }
+        $item = self::$_client->putItem($args);
+    }
+
+    /**
+     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
+     */
+    public function updateItem($values) {
+        $conditions = $this->_getKeyConditions();
+        $conditions = $this->_formatAttributes($conditions);
+        $attrs      = $this->_formatAttributeUpdates($values);
+
+        foreach ($conditions as $key => $value) {
+            if (isset($attrs[$key])) {
+               unset($attrs[$key]);
+            }
+        }
+        $args = array(
+            'TableName'        => $this->_table_name,
+            'Key'              => $conditions,
+            'AttributeUpdates' => $attrs,
+        );
+        $item = self::$_client->updateItem($args);
+    }
+
+
 
     //-----------------------------------------------
     // MAGIC METHODS
@@ -218,9 +258,12 @@ class ORM {
     }
 
     protected function _getKeyConditions() {
-        $query = [
+
+        $condition = array();
+
+        $query = array(
             $this->_hash_key => $this->get($this->_hash_key)
-            ];
+        );
         if ($this->_range_key) {
             if ($this->get($this->_range_key)) {
                 $query[$this->_range_key] = $this->get($this->_range_key);
@@ -229,29 +272,99 @@ class ORM {
         return $query;
     }
 
-    /**
-     * Convert array format to DynamoDBWrapper format
-     *
-     * @params array $array
-     *                  array("key1" => "value1",
-     *                        "key2" => "value2"
-     *                       );
-     *
-     * @return array $result
-     *                  array("key1::S" => "value1",
-     *                        "key2::N" => "value2"
-     *                        );
-     * 
-     */
-    protected function _formatValues($values) {
-        $result = [];
-        foreach ($values as $key => $value) {
+    protected function _formatAttributes($array) {
+        $result = array();
+        foreach ($array as $key => $value) {
             $type = $this->_getDataType($key);
-            $result["{$key}::{$type}"] = $value;
+            $result[$key] = array($type => $value);
         }
         return $result;
     }
 
+    protected function _formatAttributeUpdates($array) {
+        $result = array();
+        foreach ($array as $key => $value) {
+            $type = $this->_getDataType($key);
+            $action = 'PUT'; // TODO
+            $result[$key] = array(
+                'Action' => $action,
+                'Value' => array($type => $value),
+            );
+        }
+        return $result;
+    }
+    protected function _formatResults($items) {
+        $result = array();
+        foreach ($items as $item) {
+            $result[] = $this->_formatResult($item);
+        }
+        return $result;
+    }
+
+    protected function _formatResult($item) {
+        $hash = array();
+        foreach ($item as $key => $value) {
+            $values = array_values($value);
+            $hash[$key] = $values[0];
+        }
+        return $hash;
+    }
+
+    /**    
+     * $input_condition = array(
+     *    'key1' => 'value',
+     *    'key2' => array('=', 10),
+     *    'key3' => array('!=', 10),
+     *    'key4' => array('>', 10),
+     *    'key5' => array('>=', 10),
+     *    'key6' => array('<', 10),
+     *    'key7' => array('<=', 10),
+     *    'key8' => array('~', 10, 11),
+     * );
+    */
+    protected function _formatConditions($conditions) {
+        $result = array();
+        foreach ($conditions as $key => $value) {
+            if (!is_array($value)) {
+                $value = array('=', (string) $value);
+            }
+            $operator = array_shift($value);
+            $operator = $this->_convertOperator($operator);
+            //$value    = count($_value) > 1 ? $_value[1] : null;
+
+            $attrs = array();
+            foreach ($value as $v) {
+                $attrs[] = array($this->_getDataType($key) => (string) $v);
+            }
+            $result[$key] = array(
+                'ComparisonOperator' => $operator,
+                'AttributeValueList' => $attrs,
+            );
+        }
+        return $result;
+    }
+
+    protected function _convertOperator($operator) {
+        $operator_map = array(
+            '='  => 'EQ',
+            '!=' => 'NE',
+            '>'  => 'GT',
+            '>=' => 'GE',
+            '<'  => 'LT',
+            '<=' => 'LE',
+            '~'  => 'BETWEEN',
+            'IN' => 'IN',
+            );
+        if (isset($operator_map[$operator])) {
+            return $operator_map[$operator];
+        }
+        if (in_array($operator, array_values($operator_map))) {
+            return $operator;
+        }
+        return 'EQ';
+    }
+
+  
     /** 
      * Return data type using $_schema 
      *
@@ -280,11 +393,12 @@ class ORM {
     // called from static factory method.
     protected static function _setupClient() {
         if (!self::$_client) {
-            $client = new \DynamoDBWrapper(array(
+            $params = array(
                 'key'    => self::$_config['key'],
                 'secret' => self::$_config['secret'],
                 'region' => self::$_config['region'],
-            ));
+            );
+            $client = DynamoDbClient::factory($params);
             self::$_client = $client;
         }
     }
