@@ -19,7 +19,7 @@ class ORM {
      */
     protected static $_config;
 
-    // instance of DynamoDBWrapper class
+    // instance of DynamoDbClient class
     protected static $_client;
 
     // --------------------------
