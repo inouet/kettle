@@ -145,8 +145,8 @@ class ORM {
         $conditions = $this->_getKeyConditions();
         $conditions = $this->_formatAttributes($conditions);
         $args = array(
-            'TableName' => $this->_table_name,
-            'Key' => $conditions,
+            'TableName'    => $this->_table_name,
+            'Key'          => $conditions,
             'ReturnValues' => 'ALL_OLD',
         );
 
@@ -159,7 +159,7 @@ class ORM {
     } 
 
     public function get($key) {
-        return $this->_data[$key];
+        return isset($this->_data[$key]) ? $this->_data[$key] : null;
     }
 
     public function create($data = array()) {
