@@ -387,13 +387,13 @@ class ORM {
             $operator = array_shift($value);
             $operator = $this->_convertOperator($operator);
 
-            $attrs = array();
+            $attributes = array();
             foreach ($value as $v) {
-                $attrs[] = array($this->_getDataType($key) => (string) $v);
+                $attributes[] = array($this->_getDataType($key) => (string) $v);
             }
             $result[$key] = array(
                 'ComparisonOperator' => $operator,
-                'AttributeValueList' => $attrs,
+                'AttributeValueList' => $attributes,
             );
         }
         return $result;
