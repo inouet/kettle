@@ -56,7 +56,15 @@ class ORM {
     // LIMIT
     protected $_limit  = null;
 
-    // Array of WHERE clauses
+    /**
+     * Array of WHERE clauses
+     *
+     * $_where_conditions = array(
+     *    0 => array('name', 'EQ', 'John'),
+     *    1 => array('age',  'GT', 20),
+     *    2 => array('country', 'IN', array('Japan', 'Korea'))
+     *  );
+     */
     protected $_where_conditions = array();
 
     // Is this a new object (has create() been called)?
@@ -70,7 +78,7 @@ class ORM {
     }
 
     /**
-     * Retrive single result using hash_key and range_key
+     * Retrieve single result using hash_key and range_key
      *
      * @return object  instance of the ORM sub class
      */
@@ -107,13 +115,13 @@ class ORM {
     }
 
     /**
-     * Retrive multiple results using query
+     * Retrieve multiple results using query
      *
      */
-    public function findMany($query, $options = array()) {
+    public function findMany($options = array()) {
 
-        // query($tableName, $keyConditions, $options = array())
-        $result = $this->query($query, $options);
+        $conditions = $this->_buildConditions();
+        $result = $this->query($conditions, $options);
 
         // scan($tableName, $filter, $limit = null)
         $array  = array();
@@ -146,7 +154,12 @@ class ORM {
         return $result;
     }
 
-    // @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_deleteItem
+    /**
+     * Delete record
+     *
+     * @return mixed
+     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_deleteItem
+     */
     public function delete() {
         $conditions = $this->_getKeyConditions();
         $args = array(
@@ -161,6 +174,8 @@ class ORM {
 
     /**
      * Add a LIMIT to the query
+     *
+     * @param int $limit
      */
     public function limit($limit) {
          $this->_limit = $limit;
@@ -170,9 +185,9 @@ class ORM {
     /**
      * Add a WHERE column = value clause
      *
-     * @param $key
-     * @param $value or $operator
-     * @param $value
+     * @param string $key
+     * @param string $value or $operator
+     * @param mixed  $value
      *
      * Usage:
      *    $user->where('name', 'John');
@@ -187,7 +202,7 @@ class ORM {
             $operator = 'EQ';
         } else {
             $value    = $args[2];
-            $operator = $args[1];
+            $operator = $this->_convertOperator($args[1]);
         }
 
         $this->_where_conditions[] = array($key, $operator, $value);
@@ -216,10 +231,10 @@ class ORM {
         return self::$_client;
     }
 
-    public function query($query, $options = array()) {
+    public function query($conditions, $options = array()) {
         $args = array(
             'TableName' => $this->_table_name,
-            'KeyConditions' => $this->_formatConditions($query),
+            'KeyConditions' => $conditions,
             'ScanIndexForward' => true,
             'Limit' => 100,
         );
@@ -347,45 +362,41 @@ class ORM {
         return $hash;
     }
 
-    /** 
-     * Format condition array
-     *
-     * @param array $conditions
-     *
-     * $conditions = array(
-     *    'key1' => 'hoge',
-     *    'key2' => array('=', 10),
-     *    'key3' => array('!=', 10),
-     *    'key4' => array('>', 10),
-     *    'key5' => array('>=', 10),
-     *    'key6' => array('<', 10),
-     *    'key7' => array('<=', 10),
-     *    'key8' => array('~', 10, 11),
-     * );
-     *
-     * @return array $result
-     *  
-     * $result = array(
-     *    'key1' => array(
-     *          'ComparisonOperator' => 'EQ'
-     *          'AttributeValueList' => array(
-     *               0 => array(
-     *                       'S' => 'hoge'
-     *                   )
-     *          )
-     *     ),
-     *     :
-     *     :
-     *  );
-     */
-    protected function _formatConditions($conditions) {
-        $result = array();
-        foreach ($conditions as $key => $value) {
+   /**
+    * Build where conditions
+    *
+    * $_where_conditions = array(
+    *    0 => array('name', 'EQ', 'John'),
+    *    1 => array('age',  'GT', 20),
+    *    2 => array('country', 'IN', array('Japan', 'Korea'))
+    *  );
+    *
+    * @return array $result
+    *
+    * $result = array(
+    *    'name' => array(
+    *          'ComparisonOperator' => 'EQ'
+    *          'AttributeValueList' => array(
+    *               0 => array(
+    *                       'S' => 'John'
+    *                   )
+    *          )
+    *     ),
+    *     :
+    *     :
+    *  );
+    */
+    public function _buildConditions() {
+        $result     = array();
+        $conditions = $this->_where_conditions;
+        foreach ($conditions as $i => $condition) {
+            $key      = $condition[0];
+            $operator = $condition[1];
+            $value    = $condition[2];
+
             if (!is_array($value)) {
-                $value = array('=', (string) $value);
+                $value = array((string) $value);
             }
-            $operator = array_shift($value);
-            $operator = $this->_convertOperator($operator);
 
             $attributes = array();
             foreach ($value as $v) {
