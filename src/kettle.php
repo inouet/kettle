@@ -162,9 +162,36 @@ class ORM {
     /**
      * Add a LIMIT to the query
      */
-     public function limit($limit) {
+    public function limit($limit) {
          $this->_limit = $limit;
          return $this;
+    }
+
+    /**
+     * Add a WHERE column = value clause
+     *
+     * @param $key
+     * @param $value or $operator
+     * @param $value
+     *
+     * Usage:
+     *    $user->where('name', 'John');
+     *    $user->where('age', '>', 20);
+     *
+     */
+    public function where() {
+        $args = func_get_args();
+        $key  = $args[0];
+        if (func_num_args() == 2) {
+            $value    = $args[1];
+            $operator = 'EQ';
+        } else {
+            $value    = $args[2];
+            $operator = $args[1];
+        }
+
+        $this->_where_conditions[] = array($key, $operator, $value);
+        return $this;
     }
 
     public function set($key, $value) {
@@ -217,17 +244,17 @@ class ORM {
      */
     public function updateItem($values) {
         $conditions = $this->_getKeyConditions();
-        $attrs      = $this->_formatAttributeUpdates($values);
+        $attributes = $this->_formatAttributeUpdates($values);
 
         foreach ($conditions as $key => $value) {
-            if (isset($attrs[$key])) {
-               unset($attrs[$key]);
+            if (isset($attributes[$key])) {
+               unset($attributes[$key]);
             }
         }
         $args = array(
             'TableName'        => $this->_table_name,
             'Key'              => $conditions,
-            'AttributeUpdates' => $attrs,
+            'AttributeUpdates' => $attributes,
         );
         $item = self::$_client->updateItem($args);
     }
