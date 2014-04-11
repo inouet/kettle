@@ -20,8 +20,7 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "aws/aws-sdk-php": "2.*",
-        "aws/dynamodb-php-wrapper": "dev-master"
+        "aws/aws-sdk-php": "2.*"
     },
     "require-dev": {
         "phpunit/phpunit": "3.7.*"
