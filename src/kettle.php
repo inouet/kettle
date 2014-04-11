@@ -310,9 +310,13 @@ class ORM {
         return $hash;
     }
 
-    /**    
-     * $input_condition = array(
-     *    'key1' => 'value',
+    /** 
+     * Format condition array
+     *
+     * @param array $conditions
+     *
+     * $conditions = array(
+     *    'key1' => 'hoge',
      *    'key2' => array('=', 10),
      *    'key3' => array('!=', 10),
      *    'key4' => array('>', 10),
@@ -321,7 +325,22 @@ class ORM {
      *    'key7' => array('<=', 10),
      *    'key8' => array('~', 10, 11),
      * );
-    */
+     *
+     * @return array $result
+     *  
+     * $result = array(
+     *    'key1' => array(
+     *          'ComparisonOperator' => 'EQ'
+     *          'AttributeValueList' => array(
+     *               0 => array(
+     *                       'S' => 'hoge'
+     *                   )
+     *          )
+     *     ),
+     *     :
+     *     :
+     *  );
+     */
     protected function _formatConditions($conditions) {
         $result = array();
         foreach ($conditions as $key => $value) {
@@ -330,7 +349,6 @@ class ORM {
             }
             $operator = array_shift($value);
             $operator = $this->_convertOperator($operator);
-            //$value    = count($_value) > 1 ? $_value[1] : null;
 
             $attrs = array();
             foreach ($value as $v) {
@@ -344,8 +362,14 @@ class ORM {
         return $result;
     }
 
+    /**
+     * Convert operator by alias
+     *
+     * @param  string $operator
+     * @return string $operator
+     */
     protected function _convertOperator($operator) {
-        $operator_map = array(
+        $alias = array(
             '='  => 'EQ',
             '!=' => 'NE',
             '>'  => 'GT',
@@ -353,15 +377,20 @@ class ORM {
             '<'  => 'LT',
             '<=' => 'LE',
             '~'  => 'BETWEEN',
-            'IN' => 'IN',
+            '^'  => 'BEGINS_WITH',
+            'NOT_NULL'     => 'NOT_NULL',
+            'NULL'         => 'NULL',
+            'CONTAINS'     => 'CONTAINS',
+            'NOT_CONTAINS' => 'NOT_CONTAINS',
+            'IN'           => 'IN',
             );
-        if (isset($operator_map[$operator])) {
-            return $operator_map[$operator];
+        if (isset($alias[$operator])) {
+            return $alias[$operator];
         }
-        if (in_array($operator, array_values($operator_map))) {
+        if (in_array($operator, array_values($alias))) {
             return $operator;
         }
-        return 'EQ';
+        return 'EQ'; // default
     }
 
   
