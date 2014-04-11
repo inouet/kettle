@@ -53,6 +53,12 @@ class ORM {
      */   
     protected $_data   = array();
 
+    // LIMIT
+    protected $_limit  = null;
+
+    // Array of WHERE clauses
+    protected $_where_conditions = array();
+
     // Is this a new object (has create() been called)?
     protected $_is_new = false;
 
@@ -151,6 +157,14 @@ class ORM {
 
         $result = self::$_client->deleteItem($args);
         return $result;
+    }
+
+    /**
+     * Add a LIMIT to the query
+     */
+     public function limit($limit) {
+         $this->_limit = $limit;
+         return $this;
     }
 
     public function set($key, $value) {
