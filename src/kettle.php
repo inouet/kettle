@@ -143,7 +143,6 @@ class ORM {
     // @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_deleteItem
     public function delete() {
         $conditions = $this->_getKeyConditions();
-        $conditions = $this->_formatAttributes($conditions);
         $args = array(
             'TableName'    => $this->_table_name,
             'Key'          => $conditions,
@@ -204,7 +203,6 @@ class ORM {
      */
     public function updateItem($values) {
         $conditions = $this->_getKeyConditions();
-        $conditions = $this->_formatAttributes($conditions);
         $attrs      = $this->_formatAttributeUpdates($values);
 
         foreach ($conditions as $key => $value) {
@@ -258,18 +256,16 @@ class ORM {
     }
 
     protected function _getKeyConditions() {
-
-        $condition = array();
-
-        $query = array(
+        $condition = array(
             $this->_hash_key => $this->get($this->_hash_key)
         );
         if ($this->_range_key) {
             if ($this->get($this->_range_key)) {
-                $query[$this->_range_key] = $this->get($this->_range_key);
+                $condition[$this->_range_key] = $this->get($this->_range_key);
             }
         }
-        return $query;
+        $condition = $this->_formatAttributes($condition);
+        return $condition;
     }
 
     protected function _formatAttributes($array) {
