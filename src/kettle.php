@@ -53,6 +53,8 @@ class ORM {
      */   
     protected $_data   = array();
 
+    protected $_data_original = array();
+
     // LIMIT
     protected $_limit  = null;
 
@@ -223,8 +225,18 @@ class ORM {
     }
 
     public function hydrate($data = array()) {
-        $this->_data = $data;
+        $this->_data          = $data;
+        $this->_data_original = $data;
         return $this;
+    }
+
+    /**
+     * Return the raw data wrapped by this ORM instance as an associative array.
+     *
+     * @return array
+     */
+    public function asArray() {
+         return $this->_data;
     }
 
     public function getClient() {
