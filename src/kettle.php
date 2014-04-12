@@ -248,10 +248,24 @@ class ORM {
          return $this->_data;
     }
 
+    /**
+     * Return DynamoDbClient instance
+     *
+     * @return object DynamoDbClient
+     */
     public function getClient() {
         return self::$_client;
     }
 
+    /**
+     * query
+     *
+     * @param  array $conditions
+     * @param  array $options
+     * @return array
+     *
+     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_query
+     */
     public function query($conditions, $options = array()) {
         $args = array(
             'TableName'        => $this->_table_name,
@@ -277,6 +291,9 @@ class ORM {
         $args = array(
             'TableName' => $this->_table_name,
             'Item'      => $this->_formatAttributes($values),
+            //'ReturnValues'                => 'ALL_NEW',
+            'ReturnConsumedCapacity'      => 'TOTAL',
+            'ReturnItemCollectionMetrics' => 'SIZE',
         );
         if (!empty($expected)) {
             $args['Expected'] = $expected;
