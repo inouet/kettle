@@ -37,7 +37,7 @@ ORM::configure("region", 'AWS_REGION');
 
 ```
 
-2. Define Model Class
+2. Create Model Class
 -------------------
 
 ```php
@@ -56,3 +56,70 @@ class User extends ORM {
 
 ```
 
+3. Save
+-------------------
+
+```php
+<?php
+
+$user = ORM::factory('User')->create();
+$user->id = 1;
+$user->name = 'John';
+$user->age  = 20;
+$user->save();
+
+```
+
+4. Retrieve
+-------------------
+
+```php
+<?php
+
+$user = ORM::factory('User')->findOne(1);
+echo $user->name. PHP_EOL;
+
+print_r($user->asArray());
+
+```
+
+5. Update
+-------------------
+
+```php
+<?php
+
+$user = ORM::factory('User')->findOne(1);
+$user->age = 21;
+$user->save();
+
+```
+
+6. Delete
+-------------------
+
+```php
+<?php
+
+$user = ORM::factory('User')->findOne(1);
+$user->delete();
+
+```
+
+
+7. Find
+-------------------
+
+```php
+<?php
+
+$tweets = ORM::factory('Tweets')
+        ->where('user_id', 1)
+        ->where('timestamp', '>', 1397264554);
+        ->findMany();
+
+foreach ($tweets as $tweet) {
+     echo $tweet->text . PHP_EOL;
+}
+
+```
