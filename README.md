@@ -56,7 +56,7 @@ class User extends ORM {
 
 ```
 
-3. Save
+3. Create
 -------------------
 
 ```php
