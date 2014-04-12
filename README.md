@@ -23,3 +23,36 @@ foreach ($tweets as $tweet) {
 }
 
 ```
+
+1. Setup
+-------------------
+
+```php
+<?php
+use Kettle\ORM;
+
+ORM::configure("key",    'AWS_KEY');
+ORM::configure("secret", 'AWS_SECRET');
+ORM::configure("region", 'AWS_REGION');
+
+```
+
+2. Define Model Class
+-------------------
+
+```php
+<?php
+
+class User extends ORM {
+    protected $_table_name = 'user';
+    protected $_hash_key   = 'user_id';
+    protected $_schema = array(
+      'user_id'    => 'N',
+      'name'       => 'S',
+      'age'        => 'N',
+     );
+}
+
+
+```
+
