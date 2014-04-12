@@ -139,18 +139,27 @@ class ORM {
     /**
      * Save data to the DynamoDB
      *
+     * @param array $options
+     *
+     *  $options = array(
+     *     'ReturnValues'                => 'NONE', // NONE|ALL_OLD|UPDATED_OLD|ALL_NEW|UPDATED_NEW
+     *     'ReturnConsumedCapacity'      => 'NONE', // INDEXES|TOTAL|NONE
+     *     'ReturnItemCollectionMetrics' => 'NONE', // SIZE|NONE
+     *     'Action'                      => array('counter' => 'ADD'),
+     *  );
+     *
      */
-    public function save() {
+    public function save($options = array()) {
         $values = $this->_data;
 
         if ($this->_is_new) { // insert
             // TODO: Expected support
             $expected = array();
-            $result = $this->putItem($values, $expected);
+            $result = $this->putItem($values, $options, $expected);
         } else { // update
             // TODO: Expected support
             $expected = array();
-            $result = $this->updateItem($values, $expected);
+            $result = $this->updateItem($values, $options, $expected);
         }
 
         return $result;
@@ -245,17 +254,26 @@ class ORM {
 
     public function query($conditions, $options = array()) {
         $args = array(
-            'TableName' => $this->_table_name,
-            'KeyConditions' => $conditions,
+            'TableName'        => $this->_table_name,
+            'KeyConditions'    => $conditions,
             'ScanIndexForward' => true,
-            'Limit' => 100,
+            'Limit'            => 100,
         );
         $result = self::$_client->query($args);
         
         return $this->_formatResults($result['Items']);
     }
 
-    public function putItem($values, $expected = array()) {
+    /**
+     * putItem
+     *
+     * @param array $values
+     * @param array $options
+     * @param array $expected
+     *
+     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_putItem
+     */
+    public function putItem($values, $options = array(), $expected = array()) {
         $args = array(
             'TableName' => $this->_table_name,
             'Item'      => $this->_formatAttributes($values),
@@ -263,15 +281,41 @@ class ORM {
         if (!empty($expected)) {
             $args['Expected'] = $expected;
         }
+
+        // Merge $options to $args
+        $option_names = array('ReturnValues', 'ReturnConsumedCapacity', 'ReturnItemCollectionMetrics');
+        foreach ($option_names as $option_name) {
+            if (isset($options[$option_name])) {
+                $args[$option_name] = $options[$option_name];
+            }
+        }
         $item = self::$_client->putItem($args);
+        return $item;
     }
 
     /**
+     * updateItem
+     *
+     * @param array $values associative array
+     *                 $values = array(
+     *                       'name' => 'John',
+     *                       'age'  => 30,
+     *                 );
+     *
+     * @param array $options
+     * @param array $expected
+     *
      * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
      */
-    public function updateItem($values) {
+    public function updateItem($values, $options = array(), $expected = array()) {
         $conditions = $this->_getKeyConditions();
-        $attributes = $this->_formatAttributeUpdates($values);
+
+        $action = array(); // Update Action (ADD|PUT|DELETE)
+        if (isset($options['Action'])) {
+            $action = $options['Action'];
+        }
+
+        $attributes = $this->_formatAttributeUpdates($values, $action);
 
         foreach ($conditions as $key => $value) {
             if (isset($attributes[$key])) {
@@ -282,8 +326,21 @@ class ORM {
             'TableName'        => $this->_table_name,
             'Key'              => $conditions,
             'AttributeUpdates' => $attributes,
+            'ReturnValues'                => 'ALL_NEW',
+            'ReturnConsumedCapacity'      => 'TOTAL',
+            'ReturnItemCollectionMetrics' => 'SIZE',
         );
+
+        // Merge $options to $args
+        $option_names = array('ReturnValues', 'ReturnConsumedCapacity', 'ReturnItemCollectionMetrics');
+        foreach ($option_names as $option_name) {
+            if (isset($options[$option_name])) {
+                $args[$option_name] = $options[$option_name];
+            }
+        }
+
         $item = self::$_client->updateItem($args);
+        return $item;
     }
 
 
@@ -345,14 +402,31 @@ class ORM {
         return $result;
     }
 
-    protected function _formatAttributeUpdates($array) {
+    /**
+     *
+     * @param array $array
+     *              $array = array(
+     *                  'name' => 'John',
+     *                  'age'  => 20,
+     *              );
+     *
+     * @param array $actions
+     *              $actions = array(
+     *                  'count' => 'ADD', // field_name => action_name
+     *              );
+     * @return array
+     */
+    protected function _formatAttributeUpdates($array, $actions = array()) {
         $result = array();
         foreach ($array as $key => $value) {
-            $type = $this->_getDataType($key);
-            $action = 'PUT'; // TODO
+            $type   = $this->_getDataType($key);
+            $action = 'PUT'; // default
+            if (isset($actions[$key])) {
+                $action = $actions[$key]; // overwrite if $actions is set
+            }
             $result[$key] = array(
                 'Action' => $action,
-                'Value' => array($type => $value),
+                'Value'  => array($type => $value),
             );
         }
         return $result;
