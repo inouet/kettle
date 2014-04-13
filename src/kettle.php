@@ -153,8 +153,13 @@ class ORM {
         $values = $this->_data;
 
         if ($this->_is_new) { // insert
-            // TODO: Expected support
             $expected = array();
+            // Expect duplicate error if already exists.
+            $exists   = array();
+            foreach ($this->_schema as $key => $value) {
+                $exists[$key] = false;
+            }
+            $options['Exists'] = $exists;
             $result = $this->putItem($values, $options, $expected);
         } else { // update
             // TODO: Expected support
@@ -295,8 +300,11 @@ class ORM {
             'ReturnConsumedCapacity'      => 'TOTAL',
             'ReturnItemCollectionMetrics' => 'SIZE',
         );
-        if (!empty($expected)) {
-            $args['Expected'] = $expected;
+
+        // Set Expected if exists
+        if ($expected || isset($options['Exists'])) {
+            $exists = isset($options['Exists']) ? $options['Exists'] : array();
+            $args['Expected'] = $this->_formatAttributeExpected($expected, $exists);
         }
 
         // Merge $options to $args
@@ -306,6 +314,7 @@ class ORM {
                 $args[$option_name] = $options[$option_name];
             }
         }
+
         $item = self::$_client->putItem($args);
         return $item;
     }
@@ -320,6 +329,14 @@ class ORM {
      *                 );
      *
      * @param array $options
+     *                $options = array(
+     *                      'ReturnValues'                => 'string',
+     *                      'ReturnConsumedCapacity'      => 'string',
+     *                      'ReturnItemCollectionMetrics' => 'string',
+     *                      'Action' => array('age' => 'ADD'),
+     *                      'Exists' => array('age' => true),
+     *                );
+     *
      * @param array $expected
      *
      * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
@@ -347,6 +364,12 @@ class ORM {
             'ReturnConsumedCapacity'      => 'TOTAL',
             'ReturnItemCollectionMetrics' => 'SIZE',
         );
+
+        // Set Expected if exists
+        if ($expected || isset($options['Exists'])) {
+            $exists = isset($options['Exists']) ? $options['Exists'] : array();
+            $args['Expected'] = $this->_formatAttributeExpected($expected, $exists);
+        }
 
         // Merge $options to $args
         $option_names = array('ReturnValues', 'ReturnConsumedCapacity', 'ReturnItemCollectionMetrics');
@@ -410,6 +433,21 @@ class ORM {
         return $condition;
     }
 
+    /**
+     * _formatAttributes
+     *
+     * @param array $array
+     *           $array = array(
+     *                  'name' => 'John',
+     *                  'age'  => 20,
+     *           );
+     *
+     * @return array $result
+     *           $result = array(
+     *                 'name' => array('S' => 'John'),
+     *                 'age'  => array('N' => 20),
+     *           );
+     */
     protected function _formatAttributes($array) {
         $result = array();
         foreach ($array as $key => $value) {
@@ -424,14 +462,25 @@ class ORM {
      * @param array $array
      *              $array = array(
      *                  'name' => 'John',
-     *                  'age'  => 20,
+     *                  'age'  => 1,
      *              );
      *
      * @param array $actions
      *              $actions = array(
      *                  'count' => 'ADD', // field_name => action_name
      *              );
-     * @return array
+     *
+     * @return array $result
+     *               $result = array(
+     *                  'name' => array(
+     *                       'Action' => 'PUT',
+     *                       'Value'  => array('S' => 'John')
+     *                  ),
+     *                  'count' => array(
+     *                       'Action' => 'ADD',
+     *                       'Value'  => array('N' => 1)
+     *                  ),
+     *              );
      */
     protected function _formatAttributeUpdates($array, $actions = array()) {
         $result = array();
@@ -448,6 +497,22 @@ class ORM {
         }
         return $result;
     }
+
+    protected function _formatAttributeExpected($array, $exists = array()) {
+        $result = array();
+        foreach ($array as $key => $value) {
+            $type   = $this->_getDataType($key);
+            $result[$key] = array(
+                'Value'  => array($type => $value)
+            );
+        }
+        foreach ($exists as $key => $value) {
+            $result[$key]['Exists'] = $value; // set if $exists is set
+        }
+        return $result;
+    }
+
+
     protected function _formatResults($items) {
         $result = array();
         foreach ($items as $item) {
