@@ -146,26 +146,31 @@ class ORM {
      *     'ReturnConsumedCapacity'      => 'NONE', // INDEXES|TOTAL|NONE
      *     'ReturnItemCollectionMetrics' => 'NONE', // SIZE|NONE
      *     'Action'                      => array('counter' => 'ADD'),
+     *
+     *     'ForceUpdate'                 => false, // If true No ConditionalCheck
      *  );
      *
      */
     public function save($options = array()) {
         $values = $this->_data;
+        $expected = array();
 
         if ($this->_is_new) { // insert
-            $expected = array();
-            // Expect duplicate error if already exists.
-            $exists   = array();
-            foreach ($this->_schema as $key => $value) {
-                $exists[$key] = false;
+            if (!isset($options['ForceUpdate']) || !$options['ForceUpdate']) {
+                // Expect duplicate error if already exists.
+                $exists   = array();
+                foreach ($this->_schema as $key => $value) {
+                    $exists[$key] = false;
+                }
+                $options['Exists'] = $exists;
             }
-            $options['Exists'] = $exists;
             $result = $this->putItem($values, $options, $expected);
         } else { // update
-
-            // If data is modified by different instance or process,
-            // throw Aws\DynamoDb\Exception\ConditionalCheckFailedException
-            $expected = $this->_data_original;
+            if (!isset($options['ForceUpdate']) || !$options['ForceUpdate']) {
+                // If data is modified by different instance or process,
+                // throw Aws\DynamoDb\Exception\ConditionalCheckFailedException
+                $expected = $this->_data_original;
+            }
             $result = $this->updateItem($values, $options, $expected);
         }
 
