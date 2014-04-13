@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Kettle
+ *
+ * http://github.com/inouet/kettle/
+ *
+ * Kettle is a lightweight object-dynamodb mapper for PHP5.
+ */
+
 namespace Kettle;
 
 use Aws\DynamoDb\DynamoDbClient;
