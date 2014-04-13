@@ -98,9 +98,20 @@ class ORM {
 
         $key = $this->_formatAttributes($query);
         $args = array(
-            'TableName' => $this->_table_name,
-            'Key'       => $key,
+            'TableName'      => $this->_table_name,
+            'Key'            => $key,
+            'ConsistentRead' => true,
+            'ReturnConsumedCapacity' => 'TOTAL',
+            // 'AttributesToGet'
         );
+
+        // Merge $options to $args
+        $option_names = array('AttributesToGet', 'ConsistentRead', 'ReturnConsumedCapacity');
+        foreach ($option_names as $option_name) {
+            if (isset($options[$option_name])) {
+                $args[$option_name] = $options[$option_name];
+            }
+        }
 
         $item = self::$_client->getItem($args);
 
