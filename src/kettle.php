@@ -6,6 +6,9 @@
  * http://github.com/inouet/kettle/
  *
  * Kettle is a lightweight object-dynamodb mapper for PHP5.
+ *
+ * License
+ *   This software is released under the MIT License, see LICENSE.txt.
  */
 
 namespace Kettle;
