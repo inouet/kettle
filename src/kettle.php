@@ -162,8 +162,10 @@ class ORM {
             $options['Exists'] = $exists;
             $result = $this->putItem($values, $options, $expected);
         } else { // update
-            // TODO: Expected support
-            $expected = array();
+
+            // If data is modified by different instance or process,
+            // throw Aws\DynamoDb\Exception\ConditionalCheckFailedException
+            $expected = $this->_data_original;
             $result = $this->updateItem($values, $options, $expected);
         }
 
