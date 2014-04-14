@@ -1,5 +1,5 @@
 {
-    "name": "inouet/kettle",
+    "name": "kettle/orm",
     "type": "library",
     "description": "A lightweight object-dynamodb mapper for PHP5",
     "keywords": ["kettle", "orm", "dynamodb", "aws"],
