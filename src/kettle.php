@@ -58,7 +58,7 @@ class ORM {
     protected $_schema = array();
 
     /**
-     * DynamoDB record data is saved here as an associative array
+     * DynamoDB record data is stored here as an associative array
      *
      * @var array
      */   
