@@ -69,9 +69,6 @@ class ORM {
     // LIMIT (QueryParameter)
     protected $_limit  = null;
 
-    // LastEvaluatedKey (QueryParameter)
-    protected $_last_evaluated_key = null;
-
     // ExclusiveStartKey (QueryParameter)
     protected $_exclusive_start_key = null;
 
@@ -80,6 +77,9 @@ class ORM {
 
     // ConsistentRead (QueryParameter)
     protected $_consistent_read = false;
+
+    // LastEvaluatedKey (QueryResponse)
+    protected $_last_evaluated_key = null;
 
     /**
      * Array of WHERE clauses (QueryParameter)
