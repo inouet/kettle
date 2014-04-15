@@ -476,7 +476,14 @@ class ORM {
     }
 
     /**
+     * Set ExclusiveStartKey for query parameter
+     *
      * @param array $exclusive_start_key
+     *              $exclusive_start_key = array(
+     *                                       'key_name1' => 'value1',
+     *                                       'key_name2' => 'value2',
+     *                                     );
+     *
      */
     public function setExclusiveStartKey(array $exclusive_start_key) {
         $this->_exclusive_start_key = $exclusive_start_key;
@@ -530,6 +537,15 @@ class ORM {
 
     }
 
+    /**
+     * Return primary key condition
+     *
+     * @return array $condition
+     *           $condition = array(
+     *                 'id'    => array('S' => '10001'),
+     *                 'time'  => array('N' => '1397604993'),
+     *           );
+     */
     protected function _getKeyConditions() {
         $condition = array(
             $this->_hash_key => $this->get($this->_hash_key)
