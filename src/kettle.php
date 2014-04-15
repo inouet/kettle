@@ -66,11 +66,23 @@ class ORM {
 
     protected $_data_original = array();
 
-    // LIMIT
+    // LIMIT (QueryParameter)
     protected $_limit  = null;
 
+    // LastEvaluatedKey (QueryParameter)
+    protected $_last_evaluated_key = null;
+
+    // ExclusiveStartKey (QueryParameter)
+    protected $_exclusive_start_key = null;
+
+    // IndexName (QueryParameter)
+    protected $_query_index_name = null;
+
+    // ConsistentRead (QueryParameter)
+    protected $_consistent_read = false;
+
     /**
-     * Array of WHERE clauses
+     * Array of WHERE clauses (QueryParameter)
      *
      * $_where_conditions = array(
      *    0 => array('name', 'EQ', 'John'),
@@ -187,6 +199,7 @@ class ORM {
                 $options['Exists'] = $exists;
             }
             $result = $this->putItem($values, $options, $expected);
+            $this->_is_new = false;
         } else { // update
             if (!isset($options['ForceUpdate']) || !$options['ForceUpdate']) {
                 // If data is modified by different instance or process,
@@ -225,6 +238,10 @@ class ORM {
     public function limit($limit) {
          $this->_limit = $limit;
          return $this;
+    }
+
+    public function getLastEvaluatedKey() {
+        return $this->_last_evaluated_key;
     }
 
     /**
@@ -305,11 +322,57 @@ class ORM {
             'TableName'        => $this->_table_name,
             'KeyConditions'    => $conditions,
             'ScanIndexForward' => true,
-            'Limit'            => 100,
+            'Select'           => 'ALL_ATTRIBUTES',
+            'ReturnConsumedCapacity' => 'TOTAL',
+            //'ConsistentRead'   => true,
+            //'AttributesToGet'
+            //'ExclusiveStartKey'
+            //'IndexName'
         );
-        $result = self::$_client->query($args);
-        
-        return $this->_formatResults($result['Items']);
+
+        // Merge $options to $args
+        $option_names = array('ScanIndexForward', 'ConsistentRead', 'IndexName');
+        foreach ($option_names as $option_name) {
+            if (isset($options[$option_name])) {
+                $args[$option_name] = $options[$option_name];
+            }
+        }
+
+        if (intval($this->_limit) > 0) { // Has limit
+            // if ExclusiveStartKey is set
+            if ($this->_exclusive_start_key) {
+                $exclusive_start_key = $this->_formatAttributes($this->_exclusive_start_key);
+                $args['ExclusiveStartKey'] = $exclusive_start_key;
+            }
+
+            $args['Limit'] = intval($this->_limit);
+            $result = self::$_client->query($args);
+
+            // $result is "Guzzle\Service\Resource\Model"
+            // and $result has next keys
+            // - Count
+            // - Items
+            // - ScannedCount
+            // - LastEvaluatedKey
+            $items  = $result['Items'];
+
+            // Set LastEvaluatedKey
+            $last_evaluated_key = null;
+            if (isset($result['LastEvaluatedKey'])) {
+                $last_evaluated_key = $this->_formatResult($result['LastEvaluatedKey']);
+            }
+            $this->_last_evaluated_key = $last_evaluated_key;
+
+        } else { // No limit (Use Iterator)
+            $iterator = self::$_client->getIterator('Query', $args);
+            // $iterator is "Aws\Common\Iterator\AwsResourceIterator"
+            $items  = array();
+            foreach ($iterator as $item) {
+                $items[] = $item;
+            }
+        }
+
+        return $this->_formatResults($items);
     }
 
     /**
@@ -412,7 +475,25 @@ class ORM {
         return $item;
     }
 
+    /**
+     * @param array $exclusive_start_key
+     */
+    public function setExclusiveStartKey(array $exclusive_start_key) {
+        $this->_exclusive_start_key = $exclusive_start_key;
+    }
 
+    /**
+     * Reset Where Conditions and Limit ..
+     *
+     * @param void
+     */
+    public function resetConditions() {
+        $this->_limit               = null;
+        $this->_where_conditions    = array();
+        $this->_exclusive_start_key = null;
+        $this->_query_index_name    = null;
+        $this->_consistent_read     = false;
+    }
 
     //-----------------------------------------------
     // MAGIC METHODS
@@ -679,3 +760,5 @@ class ORM {
 
 }
 
+class KettleException extends \Exception {
+}
