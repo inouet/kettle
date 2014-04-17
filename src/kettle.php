@@ -240,6 +240,16 @@ class ORM {
          return $this;
     }
 
+    /**
+     * Set IndexName (Query Parameter)
+     *
+     * @param string $index_name
+     */
+    public function index($index_name) {
+        $this->_query_index_name = $index_name;
+        return $this;
+    }
+
     public function getLastEvaluatedKey() {
         return $this->_last_evaluated_key;
     }
@@ -331,11 +341,16 @@ class ORM {
         );
 
         // Merge $options to $args
-        $option_names = array('ScanIndexForward', 'ConsistentRead', 'IndexName');
+        $option_names = array('ScanIndexForward', 'ConsistentRead');
         foreach ($option_names as $option_name) {
             if (isset($options[$option_name])) {
                 $args[$option_name] = $options[$option_name];
             }
+        }
+
+        // if IndexName is specified
+        if ($this->_query_index_name) {
+            $args['IndexName'] = $this->_query_index_name;
         }
 
         if (intval($this->_limit) > 0) { // Has limit
