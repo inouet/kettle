@@ -98,7 +98,7 @@ class ORM {
     //-----------------------------------------------
     // PUBLIC METHODS
     //-----------------------------------------------
-    public function configure($key, $value) {
+    public static function configure($key, $value) {
         self::$_config[$key] = $value;
     }
 
@@ -179,14 +179,13 @@ class ORM {
      *     'ReturnValues'                => 'NONE', // NONE|ALL_OLD|UPDATED_OLD|ALL_NEW|UPDATED_NEW
      *     'ReturnConsumedCapacity'      => 'NONE', // INDEXES|TOTAL|NONE
      *     'ReturnItemCollectionMetrics' => 'NONE', // SIZE|NONE
-     *     'Action'                      => array('counter' => 'ADD'),
      *
      *     'ForceUpdate'                 => false, // If true No ConditionalCheck
      *  );
      *
      */
     public function save($options = array()) {
-        $values = $this->_data;
+        $values   = $this->_removeEmpty($this->_data);
         $expected = array();
 
         if ($this->_is_new) { // insert
@@ -206,7 +205,8 @@ class ORM {
                 // throw Aws\DynamoDb\Exception\ConditionalCheckFailedException
                 $expected = $this->_data_original;
             }
-            $result = $this->updateItem($values, $options, $expected);
+            $result = $this->putItem($values, $options, $expected);
+            //$result = $this->updateItem($values, $options, $expected);
         }
 
         return $result;
@@ -289,6 +289,26 @@ class ORM {
 
     public function get($key) {
         return isset($this->_data[$key]) ? $this->_data[$key] : null;
+    }
+
+    public function setRemove($name, $value) {
+        $type = $this->_getDataType($name);
+        if ($type == 'SS' || $type == 'NS' || $type == 'BS') {
+            $array = $this->get($name);
+            $index = array_search($value, $array);
+            if (!is_null($index)){
+                unset($array[$index]);
+            }
+            $array = array_values($array);
+            $this->set($name, $array);
+        }
+    }
+
+    public function setAdd($name, $value) {
+        $type = $this->_getDataType($name);
+        if ($type == 'SS' || $type == 'NS' || $type == 'BS') {
+            $this->_data[$name][] = $value;
+        }
     }
 
     public function create($data = array()) {
@@ -772,6 +792,15 @@ class ORM {
             $type = $this->_schema[$key];
         }
         return $type;
+    }
+
+    protected function _removeEmpty(array $array) {
+        foreach ($array as $key => $value) {
+            if (empty($value)) {
+                unset($array[$key]);
+            }
+        }
+        return $array;
     }
 
     //-----------------------------------------------
