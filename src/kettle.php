@@ -282,7 +282,9 @@ class ORM {
     }
 
     public function set($key, $value) {
-        $this->_data[$key] = $value;
+        if (array_key_exists($key, $this->_schema)) {
+            $this->_data[$key] = $value;
+        }
     } 
 
     public function get($key) {
