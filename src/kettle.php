@@ -26,12 +26,22 @@ class ORM {
      *          - key
      *          - secret
      *          - region
-     *
+     *          - logging
+     *          - logging_response
      */
-    protected static $_config;
+    protected static $_config = array(
+        'key'               => null,
+        'secret'            => null,
+        'region'            => null,
+        'logging'           => false,
+        'logging_response'  => false,
+    );
 
     // instance of DynamoDbClient class
     protected static $_client;
+
+    // Log of all queries run, mapped by connection key, only populated if logging is enabled
+    protected static $_query_log = array();
 
     // --------------------------
 
@@ -103,6 +113,38 @@ class ORM {
     }
 
     /**
+     * Retrieve configuration options by key, or as whole array.
+     *
+     * @param string $key
+     */
+    public static function getConfig($key = null) {
+        if ($key) {
+            return isset(self::$_config[$key]) ? self::$_config[$key] : null;
+        } else {
+            return self::$_config;
+        }
+    }
+
+    /**
+     * Get an array containing all the queries and response
+     * Only works if the 'logging' config option is
+     * set to true. Otherwise, returned array will be empty.
+     */
+    public static function getQueryLog() {
+        if (isset(self::$_query_log)) {
+            return self::$_query_log;
+        }
+        return array();
+    }
+
+    public static function getLastQuery() {
+        if (!isset(self::$_query_log)) {
+            return '';
+        }
+        return end(self::$_query_log);
+    }
+
+    /**
      * Retrieve single result using hash_key and range_key
      *
      * @return object  instance of the ORM sub class
@@ -137,6 +179,7 @@ class ORM {
         }
 
         $item = self::$_client->getItem($args);
+        self::_logQuery('getItem', $args, $item);
 
         if (!is_array($item['Item'])) {
             return null;
@@ -227,6 +270,7 @@ class ORM {
         );
 
         $result = self::$_client->deleteItem($args);
+        self::_logQuery('deleteItem', $args, $result);
         return $result;
     }
 
@@ -383,7 +427,9 @@ class ORM {
             }
 
             $args['Limit'] = intval($this->_limit);
+
             $result = self::$_client->query($args);
+            self::_logQuery("query", $args, $result);
 
             // $result is "Guzzle\Service\Resource\Model"
             // and $result has next keys
@@ -402,6 +448,7 @@ class ORM {
 
         } else { // No limit (Use Iterator)
             $iterator = self::$_client->getIterator('Query', $args);
+            self::_logQuery('getIterator', $args, $iterator);
             // $iterator is "Aws\Common\Iterator\AwsResourceIterator"
             $items  = array();
             foreach ($iterator as $item) {
@@ -445,6 +492,8 @@ class ORM {
         }
 
         $item = self::$_client->putItem($args);
+        self::_logQuery('putItem', $args, $item);
+
         return $item;
     }
 
@@ -509,6 +558,7 @@ class ORM {
         }
 
         $item = self::$_client->updateItem($args);
+        self::_logQuery('updateItem', $args, $item);
         return $item;
     }
 
@@ -820,6 +870,17 @@ class ORM {
         }
     }
 
+    protected static function _logQuery($query, $args, $response) {
+        if (!self::getConfig('logging')) {
+            return false;
+        }
+        $log = array("query" => $query, "args" => $args);
+
+        if (self::getConfig('logging_response')) {
+             $log["response"] =$response;
+        }
+        self::$_query_log[] = $log;
+    }
 }
 
 class KettleException extends \Exception {
