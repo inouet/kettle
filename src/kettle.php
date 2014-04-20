@@ -166,7 +166,7 @@ class ORM {
      *
      * @return object  instance of the ORM sub class
      */
-    public function findOne($hash_key_value, $range_key_value = null, $options = array()) {
+    public function findOne($hash_key_value, $range_key_value = null, array $options = array()) {
         $conditions = array(
             $this->_hash_key => $hash_key_value,
         );
@@ -215,7 +215,7 @@ class ORM {
      * Retrieve multiple results using query
      *
      */
-    public function findMany($options = array()) {
+    public function findMany(array $options = array()) {
 
         $conditions = $this->_buildConditions();
         $result = $this->query($conditions, $options);
@@ -245,8 +245,8 @@ class ORM {
      *  );
      *
      */
-    public function save($options = array()) {
-        $values   = $this->_removeEmpty($this->_data);
+    public function save(array $options = array()) {
+        $values   = $this->_compact($this->_data);
         $expected = array();
 
         if ($this->_is_new) { // insert
@@ -414,12 +414,12 @@ class ORM {
         }
     }
 
-    public function create($data = array()) {
+    public function create(array $data = array()) {
         $this->_is_new = true;
         return $this->hydrate($data);
     }
 
-    public function hydrate($data = array()) {
+    public function hydrate(array $data = array()) {
         $this->_data          = $data;
         $this->_data_original = $data;
         return $this;
@@ -452,7 +452,7 @@ class ORM {
      *
      * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_query
      */
-    public function query($conditions, $options = array()) {
+    public function query(array $conditions, array $options = array()) {
         $args = array(
             'TableName'        => $this->_table_name,
             'KeyConditions'    => $conditions,
@@ -539,7 +539,7 @@ class ORM {
      *
      * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_putItem
      */
-    public function putItem($values, $options = array(), $expected = array()) {
+    public function putItem(array $values, array $options = array(), array $expected = array()) {
         $args = array(
             'TableName' => $this->_table_name,
             'Item'      => $this->_formatAttributes($values),
@@ -590,7 +590,7 @@ class ORM {
      *
      * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
      */
-    public function updateItem($values, $options = array(), $expected = array()) {
+    public function updateItem(array $values, array $options = array(), array $expected = array()) {
         $conditions = $this->_getKeyConditions();
 
         $action = array(); // Update Action (ADD|PUT|DELETE)
@@ -766,7 +766,7 @@ class ORM {
      *                  ),
      *              );
      */
-    protected function _formatAttributeUpdates($array, $actions = array()) {
+    protected function _formatAttributeUpdates(array $array, array $actions = array()) {
         $result = array();
         foreach ($array as $key => $value) {
             $type   = $this->_getDataType($key);
@@ -782,7 +782,7 @@ class ORM {
         return $result;
     }
 
-    protected function _formatAttributeExpected($array, $exists = array()) {
+    protected function _formatAttributeExpected(array $array, array $exists = array()) {
         $result = array();
         foreach ($array as $key => $value) {
             $type   = $this->_getDataType($key);
@@ -797,7 +797,14 @@ class ORM {
     }
 
 
-    protected function _formatResults($items) {
+    /**
+     * Convert result array to simple associative array
+     *
+     * @param array $items
+     * @return array
+     * @see ORM#_formatResult
+     */
+    protected function _formatResults(array $items) {
         $result = array();
         foreach ($items as $item) {
             $result[] = $this->_formatResult($item);
@@ -805,7 +812,26 @@ class ORM {
         return $result;
     }
 
-    protected function _formatResult($item) {
+
+
+    /**
+     * Convert result array to simple associative array
+     *
+     * @param array $item
+     *
+     *             $item = array(
+     *                   'name'   => array('S' => 'John'),
+     *                   'age'    => array('N' =>  30)
+     *             );
+     *
+     * @return array $hash
+     *
+     *             $item = array(
+     *                   'name'   => 'John',
+     *                   'age'    => 30,
+     *             );
+     */
+    protected function _formatResult(array $item) {
         $hash = array();
         foreach ($item as $key => $value) {
             $values = array_values($value);
@@ -915,7 +941,13 @@ class ORM {
         return $type;
     }
 
-    protected function _removeEmpty(array $array) {
+    /**
+     * Removing all empty elements from a hash
+     *
+     * @param array $array
+     * @return array
+     */
+    protected function _compact(array $array) {
         foreach ($array as $key => $value) {
             if (empty($value)) {
                 unset($array[$key]);
@@ -941,7 +973,7 @@ class ORM {
         }
     }
 
-    protected static function _logQuery($query, $args, $response) {
+    protected static function _logQuery($query, array $args, $response) {
         if (!self::getConfig('logging')) {
             return false;
         }
