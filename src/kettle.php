@@ -140,6 +140,11 @@ class ORM {
         return array();
     }
 
+    /**
+     * Get last query
+     *
+     * @return mixed|string
+     */
     public static function getLastQuery() {
         if (!isset(self::$_query_log)) {
             return '';
@@ -147,6 +152,11 @@ class ORM {
         return end(self::$_query_log);
     }
 
+    /**
+     * Get number of records that matched the query
+     *
+     * @return int
+     */
     public function getCount() {
         return $this->_result_count;
     }
@@ -157,7 +167,7 @@ class ORM {
      * @return object  instance of the ORM sub class
      */
     public function findOne($hash_key_value, $range_key_value = null, $options = array()) {
-        $query = array(
+        $conditions = array(
             $this->_hash_key => $hash_key_value,
         );
 
@@ -165,20 +175,21 @@ class ORM {
             if (!$this->_range_key) {
                 throw new \Exception("Range key is not defined.");
             }
-            $query[$this->_range_key] = $range_key_value;
+            $conditions[$this->_range_key] = $range_key_value;
         }
 
-        $key = $this->_formatAttributes($query);
+        $key = $this->_formatAttributes($conditions);
         $args = array(
             'TableName'      => $this->_table_name,
             'Key'            => $key,
-            'ConsistentRead' => true,
+            'ConsistentRead' => $this->_consistent_read,
             'ReturnConsumedCapacity' => 'TOTAL',
             // 'AttributesToGet'
         );
 
+
         // Merge $options to $args
-        $option_names = array('AttributesToGet', 'ConsistentRead', 'ReturnConsumedCapacity');
+        $option_names = array('AttributesToGet', 'ReturnConsumedCapacity');
         foreach ($option_names as $option_name) {
             if (isset($options[$option_name])) {
                 $args[$option_name] = $options[$option_name];
@@ -295,12 +306,29 @@ class ORM {
      * Set IndexName (Query Parameter)
      *
      * @param string $index_name
+     * @return $this
      */
     public function index($index_name) {
         $this->_query_index_name = $index_name;
         return $this;
     }
 
+    /**
+     * Set ConsistentRead Option to the query
+     *
+     * @param bool $consistent_read
+     * @return $this
+     */
+    public function consistent($consistent_read = true) {
+        $this->_consistent_read = $consistent_read;
+        return $this;
+    }
+
+    /**
+     * The LastEvaluatedKey is only provided if the results exceed 1 MB, or if you have used Limit.
+     *
+     * @return mixed array|null
+     */
     public function getLastEvaluatedKey() {
         return $this->_last_evaluated_key;
     }
@@ -332,33 +360,57 @@ class ORM {
         return $this;
     }
 
+    /**
+     * Set a property to a particular value on this object.
+     *
+     * @param string $key
+     * @param mixed  $value
+     */
     public function set($key, $value) {
         if (array_key_exists($key, $this->_schema)) {
             $this->_data[$key] = $value;
         }
-    } 
+    }
 
+    /**
+     * Return the value of a property of this object (dynamodb row) or null if not present.
+     *
+     * @param string $key
+     * @return mixed
+     */
     public function get($key) {
         return isset($this->_data[$key]) ? $this->_data[$key] : null;
     }
 
-    public function setRemove($name, $value) {
-        $type = $this->_getDataType($name);
+    /**
+     * Remove value from set type field (String Set, Number Set, Binary Set)
+     *
+     * @param $key
+     * @param $value
+     */
+    public function setRemove($key, $value) {
+        $type = $this->_getDataType($key);
         if ($type == 'SS' || $type == 'NS' || $type == 'BS') {
-            $array = $this->get($name);
+            $array = $this->get($key);
             $index = array_search($value, $array);
             if (!is_null($index)){
                 unset($array[$index]);
             }
             $array = array_values($array);
-            $this->set($name, $array);
+            $this->set($key, $array);
         }
     }
 
-    public function setAdd($name, $value) {
-        $type = $this->_getDataType($name);
+    /**
+     * Add value to set type field (String Set, Number Set, Binary Set)
+     *
+     * @param $key
+     * @param $value
+     */
+    public function setAdd($key, $value) {
+        $type = $this->_getDataType($key);
         if ($type == 'SS' || $type == 'NS' || $type == 'BS') {
-            $this->_data[$name][] = $value;
+            $this->_data[$key][] = $value;
         }
     }
 
@@ -408,14 +460,14 @@ class ORM {
             // Select: ALL_ATTRIBUTES|ALL_PROJECTED_ATTRIBUTES|SPECIFIC_ATTRIBUTES|COUNT
             'Select'           => 'ALL_ATTRIBUTES',
             'ReturnConsumedCapacity' => 'TOTAL',
-            //'ConsistentRead'   => true,
+            'ConsistentRead'   => $this->_consistent_read,
             //'AttributesToGet'
             //'ExclusiveStartKey'
             //'IndexName'
         );
 
         // Merge $options to $args
-        $option_names = array('ScanIndexForward', 'ConsistentRead');
+        $option_names = array('ScanIndexForward');
         foreach ($option_names as $option_name) {
             if (isset($options[$option_name])) {
                 $args[$option_name] = $options[$option_name];
