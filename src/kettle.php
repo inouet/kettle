@@ -91,6 +91,9 @@ class ORM {
     // LastEvaluatedKey (QueryResponse)
     protected $_last_evaluated_key = null;
 
+    // Count (QueryResponse)
+    public $_result_count = null;
+
     /**
      * Array of WHERE clauses (QueryParameter)
      *
@@ -142,6 +145,10 @@ class ORM {
             return '';
         }
         return end(self::$_query_log);
+    }
+
+    public function getCount() {
+        return $this->_result_count;
     }
 
     /**
@@ -398,6 +405,7 @@ class ORM {
             'TableName'        => $this->_table_name,
             'KeyConditions'    => $conditions,
             'ScanIndexForward' => true,
+            // Select: ALL_ATTRIBUTES|ALL_PROJECTED_ATTRIBUTES|SPECIFIC_ATTRIBUTES|COUNT
             'Select'           => 'ALL_ATTRIBUTES',
             'ReturnConsumedCapacity' => 'TOTAL',
             //'ConsistentRead'   => true,
@@ -446,6 +454,13 @@ class ORM {
             }
             $this->_last_evaluated_key = $last_evaluated_key;
 
+            // Set Count
+            $result_count = null;
+            if (isset($result['Count'])) {
+                $result_count = $result['Count'];
+            }
+            $this->_result_count = $result_count;
+
         } else { // No limit (Use Iterator)
             $iterator = self::$_client->getIterator('Query', $args);
             self::_logQuery('getIterator', $args, $iterator);
@@ -454,6 +469,10 @@ class ORM {
             foreach ($iterator as $item) {
                 $items[] = $item;
             }
+
+            // Set Count
+            $this->_result_count = count($items);
+
         }
 
         return $this->_formatResults($items);
@@ -885,3 +904,4 @@ class ORM {
 
 class KettleException extends \Exception {
 }
+
