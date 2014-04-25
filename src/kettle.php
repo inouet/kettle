@@ -9,13 +9,16 @@
  *
  * License
  *   This software is released under the MIT License, see LICENSE.txt.
+ *
+ * @package Kettle
  */
 
 namespace Kettle;
 
 use Aws\DynamoDb\DynamoDbClient;
 
-class ORM {
+class ORM
+{
 
     // --------------------------
 
@@ -30,11 +33,11 @@ class ORM {
      *          - logging_response
      */
     protected static $_config = array(
-        'key'               => null,
-        'secret'            => null,
-        'region'            => null,
-        'logging'           => false,
-        'logging_response'  => false,
+        'key'              => null,
+        'secret'           => null,
+        'region'           => null,
+        'logging'          => false,
+        'logging_response' => false,
     );
 
     // instance of DynamoDbClient class
@@ -54,12 +57,12 @@ class ORM {
     // RangeKey
     protected $_range_key;
 
-    /** 
+    /**
      * data schema
      *
-     * @var array 
-     * 
-     *        ex) 
+     * @var array
+     *
+     *        ex)
      *        $_schema = array(
      *               'field_name_1' => 'S',
      *               'field_name_2' => 'N',
@@ -71,13 +74,13 @@ class ORM {
      * DynamoDB record data is stored here as an associative array
      *
      * @var array
-     */   
-    protected $_data   = array();
+     */
+    protected $_data = array();
 
     protected $_data_original = array();
 
     // LIMIT (QueryParameter)
-    protected $_limit  = null;
+    protected $_limit = null;
 
     // ExclusiveStartKey (QueryParameter)
     protected $_exclusive_start_key = null;
@@ -111,7 +114,8 @@ class ORM {
     //-----------------------------------------------
     // PUBLIC METHODS
     //-----------------------------------------------
-    public static function configure($key, $value) {
+    public static function configure($key, $value)
+    {
         self::$_config[$key] = $value;
     }
 
@@ -120,7 +124,8 @@ class ORM {
      *
      * @param string $key
      */
-    public static function getConfig($key = null) {
+    public static function getConfig($key = null)
+    {
         if ($key) {
             return isset(self::$_config[$key]) ? self::$_config[$key] : null;
         } else {
@@ -132,8 +137,11 @@ class ORM {
      * Get an array containing all the queries and response
      * Only works if the 'logging' config option is
      * set to true. Otherwise, returned array will be empty.
+     *
+     * @return array
      */
-    public static function getQueryLog() {
+    public static function getQueryLog()
+    {
         if (isset(self::$_query_log)) {
             return self::$_query_log;
         }
@@ -143,11 +151,12 @@ class ORM {
     /**
      * Get last query
      *
-     * @return mixed|string
+     * @return array
      */
-    public static function getLastQuery() {
+    public static function getLastQuery()
+    {
         if (!isset(self::$_query_log)) {
-            return '';
+            return array();
         }
         return end(self::$_query_log);
     }
@@ -157,16 +166,22 @@ class ORM {
      *
      * @return int
      */
-    public function getCount() {
+    public function getCount()
+    {
         return $this->_result_count;
     }
 
     /**
      * Retrieve single result using hash_key and range_key
      *
-     * @return object  instance of the ORM sub class
+     * @param  string $hash_key_value
+     * @param  string $range_key_value 
+     * @param  array  $options
+     *
+     * @return \Kettle\ORM instance of the ORM sub class
      */
-    public function findOne($hash_key_value, $range_key_value = null, array $options = array()) {
+    public function findOne($hash_key_value, $range_key_value = null, array $options = array())
+    {
         $conditions = array(
             $this->_hash_key => $hash_key_value,
         );
@@ -178,11 +193,11 @@ class ORM {
             $conditions[$this->_range_key] = $range_key_value;
         }
 
-        $key = $this->_formatAttributes($conditions);
+        $key  = $this->_formatAttributes($conditions);
         $args = array(
-            'TableName'      => $this->_table_name,
-            'Key'            => $key,
-            'ConsistentRead' => $this->_consistent_read,
+            'TableName'              => $this->_table_name,
+            'Key'                    => $key,
+            'ConsistentRead'         => $this->_consistent_read,
             'ReturnConsumedCapacity' => 'TOTAL',
             // 'AttributesToGet'
         );
@@ -206,7 +221,7 @@ class ORM {
         $result = $this->_formatResult($item['Item']);
 
         $class_name = get_called_class();
-        $instance = self::factory($class_name);
+        $instance   = self::factory($class_name);
         $instance->hydrate($result);
         return $instance;
     }
@@ -214,14 +229,18 @@ class ORM {
     /**
      * Retrieve multiple results using query
      *
+     * @param  array $options
+     *
+     * @return \Kettle\ORM[]
      */
-    public function findMany(array $options = array()) {
+    public function findMany(array $options = array())
+    {
 
         $conditions = $this->_buildConditions();
-        $result = $this->query($conditions, $options);
+        $result     = $this->query($conditions, $options);
 
         // scan($tableName, $filter, $limit = null)
-        $array  = array();
+        $array      = array();
         $class_name = get_called_class();
         foreach ($result as $row) {
             $instance = self::factory($class_name);
@@ -245,20 +264,21 @@ class ORM {
      *  );
      *
      */
-    public function save(array $options = array()) {
+    public function save(array $options = array())
+    {
         $values   = $this->_compact($this->_data);
         $expected = array();
 
         if ($this->_is_new) { // insert
             if (!isset($options['ForceUpdate']) || !$options['ForceUpdate']) {
                 // Expect duplicate error if already exists.
-                $exists   = array();
+                $exists = array();
                 foreach ($this->_schema as $key => $value) {
                     $exists[$key] = false;
                 }
                 $options['Exists'] = $exists;
             }
-            $result = $this->putItem($values, $options, $expected);
+            $result        = $this->putItem($values, $options, $expected);
             $this->_is_new = false;
         } else { // update
             if (!isset($options['ForceUpdate']) || !$options['ForceUpdate']) {
@@ -277,11 +297,12 @@ class ORM {
      * Delete record
      *
      * @return mixed
-     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_deleteItem
+     * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_deleteItem
      */
-    public function delete() {
+    public function delete()
+    {
         $conditions = $this->_getKeyConditions();
-        $args = array(
+        $args       = array(
             'TableName'    => $this->_table_name,
             'Key'          => $conditions,
             'ReturnValues' => 'ALL_OLD',
@@ -295,20 +316,25 @@ class ORM {
     /**
      * Add a LIMIT to the query
      *
-     * @param int $limit
+     * @param  int $limit
+     *
+     * @return self
      */
-    public function limit($limit) {
-         $this->_limit = $limit;
-         return $this;
+    public function limit($limit)
+    {
+        $this->_limit = $limit;
+        return $this;
     }
 
     /**
      * Set IndexName (Query Parameter)
      *
-     * @param string $index_name
-     * @return $this
+     * @param  string $index_name
+     *
+     * @return self
      */
-    public function index($index_name) {
+    public function index($index_name)
+    {
         $this->_query_index_name = $index_name;
         return $this;
     }
@@ -317,9 +343,11 @@ class ORM {
      * Set ConsistentRead Option to the query
      *
      * @param bool $consistent_read
-     * @return $this
+     *
+     * @return self
      */
-    public function consistent($consistent_read = true) {
+    public function consistent($consistent_read = true)
+    {
         $this->_consistent_read = $consistent_read;
         return $this;
     }
@@ -329,7 +357,8 @@ class ORM {
      *
      * @return mixed array|null
      */
-    public function getLastEvaluatedKey() {
+    public function getLastEvaluatedKey()
+    {
         return $this->_last_evaluated_key;
     }
 
@@ -344,8 +373,10 @@ class ORM {
      *    $user->where('name', 'John');
      *    $user->where('age', '>', 20);
      *
+     * @return self
      */
-    public function where() {
+    public function where()
+    {
         $args = func_get_args();
         $key  = $args[0];
         if (func_num_args() == 2) {
@@ -366,7 +397,8 @@ class ORM {
      * @param string $key
      * @param mixed  $value
      */
-    public function set($key, $value) {
+    public function set($key, $value)
+    {
         if (array_key_exists($key, $this->_schema)) {
             $this->_data[$key] = $value;
         }
@@ -376,9 +408,11 @@ class ORM {
      * Return the value of a property of this object (dynamodb row) or null if not present.
      *
      * @param string $key
+     *
      * @return mixed
      */
-    public function get($key) {
+    public function get($key)
+    {
         return isset($this->_data[$key]) ? $this->_data[$key] : null;
     }
 
@@ -388,12 +422,13 @@ class ORM {
      * @param $key
      * @param $value
      */
-    public function setRemove($key, $value) {
+    public function setRemove($key, $value)
+    {
         $type = $this->_getDataType($key);
         if ($type == 'SS' || $type == 'NS' || $type == 'BS') {
             $array = $this->get($key);
             $index = array_search($value, $array);
-            if (!is_null($index)){
+            if (!is_null($index)) {
                 unset($array[$index]);
             }
             $array = array_values($array);
@@ -407,19 +442,32 @@ class ORM {
      * @param $key
      * @param $value
      */
-    public function setAdd($key, $value) {
+    public function setAdd($key, $value)
+    {
         $type = $this->_getDataType($key);
         if ($type == 'SS' || $type == 'NS' || $type == 'BS') {
             $this->_data[$key][] = $value;
         }
     }
 
-    public function create(array $data = array()) {
+    /**
+     * @param array $data
+     *
+     * @return self
+     */
+    public function create(array $data = array())
+    {
         $this->_is_new = true;
         return $this->hydrate($data);
     }
 
-    public function hydrate(array $data = array()) {
+    /**
+     * @param array $data
+     *
+     * @return self
+     */
+    public function hydrate(array $data = array())
+    {
         $this->_data          = $data;
         $this->_data_original = $data;
         return $this;
@@ -430,16 +478,18 @@ class ORM {
      *
      * @return array
      */
-    public function asArray() {
-         return $this->_data;
+    public function asArray()
+    {
+        return $this->_data;
     }
 
     /**
      * Return DynamoDbClient instance
      *
-     * @return object DynamoDbClient
+     * @return \Aws\DynamoDb\DynamoDbClient
      */
-    public function getClient() {
+    public function getClient()
+    {
         return self::$_client;
     }
 
@@ -448,19 +498,21 @@ class ORM {
      *
      * @param  array $conditions
      * @param  array $options
+     *
      * @return array
      *
-     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_query
+     * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_query
      */
-    public function query(array $conditions, array $options = array()) {
+    public function query(array $conditions, array $options = array())
+    {
         $args = array(
-            'TableName'        => $this->_table_name,
-            'KeyConditions'    => $conditions,
-            'ScanIndexForward' => true,
+            'TableName'              => $this->_table_name,
+            'KeyConditions'          => $conditions,
+            'ScanIndexForward'       => true,
             // Select: ALL_ATTRIBUTES|ALL_PROJECTED_ATTRIBUTES|SPECIFIC_ATTRIBUTES|COUNT
-            'Select'           => 'ALL_ATTRIBUTES',
+            'Select'                 => 'ALL_ATTRIBUTES',
             'ReturnConsumedCapacity' => 'TOTAL',
-            'ConsistentRead'   => $this->_consistent_read,
+            'ConsistentRead'         => $this->_consistent_read,
             //'AttributesToGet'
             //'ExclusiveStartKey'
             //'IndexName'
@@ -482,7 +534,7 @@ class ORM {
         if (intval($this->_limit) > 0) { // Has limit
             // if ExclusiveStartKey is set
             if ($this->_exclusive_start_key) {
-                $exclusive_start_key = $this->_formatAttributes($this->_exclusive_start_key);
+                $exclusive_start_key       = $this->_formatAttributes($this->_exclusive_start_key);
                 $args['ExclusiveStartKey'] = $exclusive_start_key;
             }
 
@@ -497,7 +549,7 @@ class ORM {
             // - Items
             // - ScannedCount
             // - LastEvaluatedKey
-            $items  = $result['Items'];
+            $items = $result['Items'];
 
             // Set LastEvaluatedKey
             $last_evaluated_key = null;
@@ -517,7 +569,7 @@ class ORM {
             $iterator = self::$_client->getIterator('Query', $args);
             self::_logQuery('getIterator', $args, $iterator);
             // $iterator is "Aws\Common\Iterator\AwsResourceIterator"
-            $items  = array();
+            $items = array();
             foreach ($iterator as $item) {
                 $items[] = $item;
             }
@@ -537,12 +589,13 @@ class ORM {
      * @param array $options
      * @param array $expected
      *
-     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_putItem
+     * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_putItem
      */
-    public function putItem(array $values, array $options = array(), array $expected = array()) {
+    public function putItem(array $values, array $options = array(), array $expected = array())
+    {
         $args = array(
-            'TableName' => $this->_table_name,
-            'Item'      => $this->_formatAttributes($values),
+            'TableName'                   => $this->_table_name,
+            'Item'                        => $this->_formatAttributes($values),
             //'ReturnValues'                => 'ALL_NEW',
             'ReturnConsumedCapacity'      => 'TOTAL',
             'ReturnItemCollectionMetrics' => 'SIZE',
@@ -550,7 +603,7 @@ class ORM {
 
         // Set Expected if exists
         if ($expected || isset($options['Exists'])) {
-            $exists = isset($options['Exists']) ? $options['Exists'] : array();
+            $exists           = isset($options['Exists']) ? $options['Exists'] : array();
             $args['Expected'] = $this->_formatAttributeExpected($expected, $exists);
         }
 
@@ -571,26 +624,27 @@ class ORM {
     /**
      * updateItem
      *
-     * @param array $values associative array
-     *                 $values = array(
+     * @param array $values  associative array
+     *                       $values = array(
      *                       'name' => 'John',
      *                       'age'  => 30,
-     *                 );
+     *                       );
      *
      * @param array $options
-     *                $options = array(
-     *                      'ReturnValues'                => 'string',
-     *                      'ReturnConsumedCapacity'      => 'string',
-     *                      'ReturnItemCollectionMetrics' => 'string',
-     *                      'Action' => array('age' => 'ADD'),
-     *                      'Exists' => array('age' => true),
-     *                );
+     *                       $options = array(
+     *                       'ReturnValues'                => 'string',
+     *                       'ReturnConsumedCapacity'      => 'string',
+     *                       'ReturnItemCollectionMetrics' => 'string',
+     *                       'Action' => array('age' => 'ADD'),
+     *                       'Exists' => array('age' => true),
+     *                       );
      *
      * @param array $expected
      *
-     * @see http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
+     * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
      */
-    public function updateItem(array $values, array $options = array(), array $expected = array()) {
+    public function updateItem(array $values, array $options = array(), array $expected = array())
+    {
         $conditions = $this->_getKeyConditions();
 
         $action = array(); // Update Action (ADD|PUT|DELETE)
@@ -602,13 +656,13 @@ class ORM {
 
         foreach ($conditions as $key => $value) {
             if (isset($attributes[$key])) {
-               unset($attributes[$key]);
+                unset($attributes[$key]);
             }
         }
         $args = array(
-            'TableName'        => $this->_table_name,
-            'Key'              => $conditions,
-            'AttributeUpdates' => $attributes,
+            'TableName'                   => $this->_table_name,
+            'Key'                         => $conditions,
+            'AttributeUpdates'            => $attributes,
             'ReturnValues'                => 'ALL_NEW',
             'ReturnConsumedCapacity'      => 'TOTAL',
             'ReturnItemCollectionMetrics' => 'SIZE',
@@ -616,7 +670,7 @@ class ORM {
 
         // Set Expected if exists
         if ($expected || isset($options['Exists'])) {
-            $exists = isset($options['Exists']) ? $options['Exists'] : array();
+            $exists           = isset($options['Exists']) ? $options['Exists'] : array();
             $args['Expected'] = $this->_formatAttributeExpected($expected, $exists);
         }
 
@@ -637,22 +691,24 @@ class ORM {
      * Set ExclusiveStartKey for query parameter
      *
      * @param array $exclusive_start_key
-     *              $exclusive_start_key = array(
+     *                                       $exclusive_start_key = array(
      *                                       'key_name1' => 'value1',
      *                                       'key_name2' => 'value2',
-     *                                     );
+     *                                       );
      *
      */
-    public function setExclusiveStartKey(array $exclusive_start_key) {
+    public function setExclusiveStartKey(array $exclusive_start_key)
+    {
         $this->_exclusive_start_key = $exclusive_start_key;
     }
 
     /**
      * Reset Where Conditions and Limit ..
      *
-     * @param void
+     * @return void
      */
-    public function resetConditions() {
+    public function resetConditions()
+    {
         $this->_limit               = null;
         $this->_where_conditions    = array();
         $this->_exclusive_start_key = null;
@@ -664,26 +720,37 @@ class ORM {
     // MAGIC METHODS
     //-----------------------------------------------
 
-    public function __get($key) {
+    public function __get($key)
+    {
         return $this->get($key);
     }
 
-    public function __set($key, $value) {
+    public function __set($key, $value)
+    {
         $this->set($key, $value);
     }
 
-    public function __unset($key) {
+    public function __unset($key)
+    {
         unset($this->_data[$key]);
     }
 
-    public function __isset($key) {
+    public function __isset($key)
+    {
         return isset($this->_data[$key]);
     }
 
     //-----------------------------------------------
     // PUBLIC METHODS (STATIC)
     //-----------------------------------------------
-    public static function factory($class_name) {
+
+    /**
+     * @param $class_name
+     *
+     * @return \Kettle\ORM instance of the ORM sub class
+     */
+    public static function factory($class_name)
+    {
         self::_setupClient();
         return new $class_name();
     }
@@ -691,7 +758,8 @@ class ORM {
     //-----------------------------------------------
     // PRIVATE METHODS
     //-----------------------------------------------
-    protected function __construct() {
+    protected function __construct()
+    {
 
     }
 
@@ -704,7 +772,8 @@ class ORM {
      *                 'time'  => array('N' => '1397604993'),
      *           );
      */
-    protected function _getKeyConditions() {
+    protected function _getKeyConditions()
+    {
         $condition = array(
             $this->_hash_key => $this->get($this->_hash_key)
         );
@@ -721,10 +790,10 @@ class ORM {
      * _formatAttributes
      *
      * @param array $array
-     *           $array = array(
+     *                  $array = array(
      *                  'name' => 'John',
      *                  'age'  => 20,
-     *           );
+     *                  );
      *
      * @return array $result
      *           $result = array(
@@ -732,10 +801,11 @@ class ORM {
      *                 'age'  => array('N' => 20),
      *           );
      */
-    protected function _formatAttributes($array) {
+    protected function _formatAttributes($array)
+    {
         $result = array();
         foreach ($array as $key => $value) {
-            $type = $this->_getDataType($key);
+            $type         = $this->_getDataType($key);
             $result[$key] = array($type => $value);
         }
         return $result;
@@ -744,15 +814,15 @@ class ORM {
     /**
      *
      * @param array $array
-     *              $array = array(
+     *                  $array = array(
      *                  'name' => 'John',
      *                  'age'  => 1,
-     *              );
+     *                  );
      *
      * @param array $actions
-     *              $actions = array(
+     *                  $actions = array(
      *                  'count' => 'ADD', // field_name => action_name
-     *              );
+     *                  );
      *
      * @return array $result
      *               $result = array(
@@ -766,7 +836,8 @@ class ORM {
      *                  ),
      *              );
      */
-    protected function _formatAttributeUpdates(array $array, array $actions = array()) {
+    protected function _formatAttributeUpdates(array $array, array $actions = array())
+    {
         $result = array();
         foreach ($array as $key => $value) {
             $type   = $this->_getDataType($key);
@@ -782,12 +853,13 @@ class ORM {
         return $result;
     }
 
-    protected function _formatAttributeExpected(array $array, array $exists = array()) {
+    protected function _formatAttributeExpected(array $array, array $exists = array())
+    {
         $result = array();
         foreach ($array as $key => $value) {
-            $type   = $this->_getDataType($key);
+            $type         = $this->_getDataType($key);
             $result[$key] = array(
-                'Value'  => array($type => $value)
+                'Value' => array($type => $value)
             );
         }
         foreach ($exists as $key => $value) {
@@ -801,17 +873,18 @@ class ORM {
      * Convert result array to simple associative array
      *
      * @param array $items
+     *
      * @return array
      * @see ORM#_formatResult
      */
-    protected function _formatResults(array $items) {
+    protected function _formatResults(array $items)
+    {
         $result = array();
         foreach ($items as $item) {
             $result[] = $this->_formatResult($item);
         }
         return $result;
     }
-
 
 
     /**
@@ -831,40 +904,42 @@ class ORM {
      *                   'age'    => 30,
      *             );
      */
-    protected function _formatResult(array $item) {
+    protected function _formatResult(array $item)
+    {
         $hash = array();
         foreach ($item as $key => $value) {
-            $values = array_values($value);
+            $values     = array_values($value);
             $hash[$key] = $values[0];
         }
         return $hash;
     }
 
-   /**
-    * Build where conditions
-    *
-    * $_where_conditions = array(
-    *    0 => array('name', 'EQ', 'John'),
-    *    1 => array('age',  'GT', 20),
-    *    2 => array('country', 'IN', array('Japan', 'Korea'))
-    *  );
-    *
-    * @return array $result
-    *
-    * $result = array(
-    *    'name' => array(
-    *          'ComparisonOperator' => 'EQ'
-    *          'AttributeValueList' => array(
-    *               0 => array(
-    *                       'S' => 'John'
-    *                   )
-    *          )
-    *     ),
-    *     :
-    *     :
-    *  );
-    */
-    public function _buildConditions() {
+    /**
+     * Build where conditions
+     *
+     * $_where_conditions = array(
+     *    0 => array('name', 'EQ', 'John'),
+     *    1 => array('age',  'GT', 20),
+     *    2 => array('country', 'IN', array('Japan', 'Korea'))
+     *  );
+     *
+     * @return array $result
+     *
+     * $result = array(
+     *    'name' => array(
+     *          'ComparisonOperator' => 'EQ'
+     *          'AttributeValueList' => array(
+     *               0 => array(
+     *                       'S' => 'John'
+     *                   )
+     *          )
+     *     ),
+     *     :
+     *     :
+     *  );
+     */
+    public function _buildConditions()
+    {
         $result     = array();
         $conditions = $this->_where_conditions;
         foreach ($conditions as $i => $condition) {
@@ -873,12 +948,12 @@ class ORM {
             $value    = $condition[2];
 
             if (!is_array($value)) {
-                $value = array((string) $value);
+                $value = array((string)$value);
             }
 
             $attributes = array();
             foreach ($value as $v) {
-                $attributes[] = array($this->_getDataType($key) => (string) $v);
+                $attributes[] = array($this->_getDataType($key) => (string)$v);
             }
             $result[$key] = array(
                 'ComparisonOperator' => $operator,
@@ -892,24 +967,26 @@ class ORM {
      * Convert operator by alias
      *
      * @param  string $operator
+     *
      * @return string $operator
      */
-    protected function _convertOperator($operator) {
+    protected function _convertOperator($operator)
+    {
         $alias = array(
-            '='  => 'EQ',
-            '!=' => 'NE',
-            '>'  => 'GT',
-            '>=' => 'GE',
-            '<'  => 'LT',
-            '<=' => 'LE',
-            '~'  => 'BETWEEN',
-            '^'  => 'BEGINS_WITH',
+            '='            => 'EQ',
+            '!='           => 'NE',
+            '>'            => 'GT',
+            '>='           => 'GE',
+            '<'            => 'LT',
+            '<='           => 'LE',
+            '~'            => 'BETWEEN',
+            '^'            => 'BEGINS_WITH',
             'NOT_NULL'     => 'NOT_NULL',
             'NULL'         => 'NULL',
             'CONTAINS'     => 'CONTAINS',
             'NOT_CONTAINS' => 'NOT_CONTAINS',
             'IN'           => 'IN',
-            );
+        );
         if (isset($alias[$operator])) {
             return $alias[$operator];
         }
@@ -919,11 +996,12 @@ class ORM {
         return 'EQ'; // default
     }
 
-  
-    /** 
-     * Return data type using $_schema 
+
+    /**
+     * Return data type using $_schema
      *
      * @param  string $key
+     *
      * @return string $type
      *
      *          S:  String
@@ -933,7 +1011,8 @@ class ORM {
      *          NS: A set of numbers
      *          BS: A set of binary
      */
-    protected function _getDataType($key) {
+    protected function _getDataType($key)
+    {
         $type = 'S';
         if (isset($this->_schema[$key])) {
             $type = $this->_schema[$key];
@@ -945,9 +1024,11 @@ class ORM {
      * Removing all empty elements from a hash
      *
      * @param array $array
+     *
      * @return array
      */
-    protected function _compact(array $array) {
+    protected function _compact(array $array)
+    {
         foreach ($array as $key => $value) {
             if (empty($value)) {
                 unset($array[$key]);
@@ -961,31 +1042,34 @@ class ORM {
     //-----------------------------------------------
 
     // called from static factory method.
-    protected static function _setupClient() {
+    protected static function _setupClient()
+    {
         if (!self::$_client) {
-            $params = array(
+            $params        = array(
                 'key'    => self::$_config['key'],
                 'secret' => self::$_config['secret'],
                 'region' => self::$_config['region'],
             );
-            $client = DynamoDbClient::factory($params);
+            $client        = DynamoDbClient::factory($params);
             self::$_client = $client;
         }
     }
 
-    protected static function _logQuery($query, array $args, $response) {
+    protected static function _logQuery($query, array $args, $response)
+    {
         if (!self::getConfig('logging')) {
             return false;
         }
         $log = array("query" => $query, "args" => $args);
 
         if (self::getConfig('logging_response')) {
-             $log["response"] =$response;
+            $log["response"] = $response;
         }
         self::$_query_log[] = $log;
     }
 }
 
-class KettleException extends \Exception {
+class KettleException extends \Exception
+{
 }
 
