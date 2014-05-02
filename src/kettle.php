@@ -1030,7 +1030,7 @@ class ORM
     protected function _compact(array $array)
     {
         foreach ($array as $key => $value) {
-            if (empty($value)) {
+            if (is_null($value) || $value === '') {
                 unset($array[$key]);
             }
         }
