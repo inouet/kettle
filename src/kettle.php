@@ -716,6 +716,36 @@ class ORM
         $this->_consistent_read     = false;
     }
 
+    /**
+     * Get Hash Key
+     *
+     * @return string
+     */
+    public function getHashKey()
+    {
+        return $this->_hash_key;
+    }
+
+    /**
+     * Get Range Key
+     *
+     * @return string
+     */
+    public function getRangeKey()
+    {
+        return $this->_range_key;
+    }
+
+    /**
+     * Get Table Name
+     *
+     * @return string
+     */
+    public function getTableName()
+    {
+        return $this->_table_name;
+    }
+
     //-----------------------------------------------
     // MAGIC METHODS
     //-----------------------------------------------
