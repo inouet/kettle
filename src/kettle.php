@@ -103,10 +103,19 @@ class ORM
      * $_where_conditions = array(
      *    0 => array('name', 'EQ', 'John'),
      *    1 => array('age',  'GT', 20),
-     *    2 => array('country', 'IN', array('Japan', 'Korea'))
      *  );
      */
     protected $_where_conditions = array();
+
+    /**
+     * Array of Filter clauses (QueryParameter)
+     *
+     * $_filter_conditions = array(
+     *    0 => array('country', 'IN', array('Japan', 'Korea'))
+     *    1 => array('age',  'GT', 20),
+     *  );
+     */
+    protected $_filter_conditions = array();
 
     // Is this a new object (has create() been called)?
     protected $_is_new = false;
@@ -236,7 +245,11 @@ class ORM
     public function findMany(array $options = array())
     {
 
-        $conditions = $this->_buildConditions();
+        $conditions = $this->_buildConditions($this->_where_conditions);
+        if ($this->_filter_conditions) {
+            $filter_conditions = $this->_buildConditions($this->_filter_conditions);
+            $options['QueryFilter'] = $filter_conditions;
+        }
         $result     = $this->query($conditions, $options);
 
         // scan($tableName, $filter, $limit = null)
@@ -388,6 +401,35 @@ class ORM
         }
 
         $this->_where_conditions[] = array($key, $operator, $value);
+        return $this;
+    }
+
+    /**
+     * Add a Filter column = value clause
+     *
+     * @param string $key
+     * @param string $value or $operator
+     * @param mixed  $value
+     *
+     * Usage:
+     *    $user->filter('name', 'John');
+     *    $user->filter('age', '>', 20);
+     *
+     * @return self
+     */
+    public function filter()
+    {
+        $args = func_get_args();
+        $key  = $args[0];
+        if (func_num_args() == 2) {
+            $value    = $args[1];
+            $operator = 'EQ';
+        } else {
+            $value    = $args[2];
+            $operator = $this->_convertOperator($args[1]);
+        }
+
+        $this->_filter_conditions[] = array($key, $operator, $value);
         return $this;
     }
 
@@ -711,6 +753,7 @@ class ORM
     {
         $this->_limit               = null;
         $this->_where_conditions    = array();
+        $this->_filter_conditions   = array();
         $this->_exclusive_start_key = null;
         $this->_query_index_name    = null;
         $this->_consistent_read     = false;
@@ -968,10 +1011,10 @@ class ORM
      *     :
      *  );
      */
-    public function _buildConditions()
+    public function _buildConditions($conditions)
     {
         $result     = array();
-        $conditions = $this->_where_conditions;
+        //$conditions = $this->_where_conditions;
         foreach ($conditions as $i => $condition) {
             $key      = $condition[0];
             $operator = $condition[1];
