@@ -2,6 +2,7 @@ Kettle
 ======
 
 Kettle is a lightweight object-dynamodb mapper for PHP5.
+Kettle provides a simple interface to Amazon DynamoDB.
 
 See Some Code
 -------------------
@@ -24,7 +25,7 @@ foreach ($tweets as $tweet) {
 
 ```
 
-1. Setup
+1. Configuration
 -------------------
 
 ```php
@@ -47,9 +48,10 @@ class User extends ORM {
     protected $_table_name = 'user';
     protected $_hash_key   = 'user_id';
     protected $_schema = array(
-      'user_id'    => 'N',
-      'name'       => 'S',
+      'user_id'    => 'N',  // user_id is number
+      'name'       => 'S',  // name is string
       'age'        => 'N',
+      'country'    => 'S',
      );
 }
 
@@ -123,3 +125,20 @@ foreach ($tweets as $tweet) {
 }
 
 ```
+
+8. Find by Global Secondary Index
+-------------------
+
+```php
+<?php
+
+$users = ORM::factory('User')
+        ->where('country', 'Japan')
+        ->where('age', '>=', 20)
+        ->index('country-age-index')  // specify index name
+        ->findMany();
+
+```
+
+
+
