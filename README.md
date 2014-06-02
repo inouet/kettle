@@ -117,7 +117,7 @@ $user->delete();
 
 $tweets = ORM::factory('Tweets')
         ->where('user_id', 1)
-        ->where('timestamp', '>', 1397264554);
+        ->where('timestamp', '>', 1397264554)
         ->findMany();
 
 foreach ($tweets as $tweet) {
@@ -141,4 +141,16 @@ $users = ORM::factory('User')
 ```
 
 
+9. Query Filtering
+-------------------
+
+```php
+<?php
+
+$tweets = ORM::factory('Tweets')
+          ->where('user_id', 1)
+          ->filter('is_deleted', 0) // using filter
+          ->findMany();
+
+```
 
