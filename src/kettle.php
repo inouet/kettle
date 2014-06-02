@@ -175,7 +175,7 @@ class ORM
      * Retrieve single result using hash_key and range_key
      *
      * @param  string $hash_key_value
-     * @param  string $range_key_value 
+     * @param  string $range_key_value
      * @param  array  $options
      *
      * @return \Kettle\ORM instance of the ORM sub class
@@ -519,7 +519,7 @@ class ORM
         );
 
         // Merge $options to $args
-        $option_names = array('ScanIndexForward');
+        $option_names = array('ScanIndexForward', 'QueryFilter');
         foreach ($option_names as $option_name) {
             if (isset($options[$option_name])) {
                 $args[$option_name] = $options[$option_name];
