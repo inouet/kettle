@@ -38,6 +38,7 @@ class ORM
         'region'           => null,
         'logging'          => false,
         'logging_response' => false,
+        'base_url'         => null,
     );
 
     // instance of DynamoDbClient class
@@ -1123,6 +1124,11 @@ class ORM
                 'secret' => self::$_config['secret'],
                 'region' => self::$_config['region'],
             );
+
+            if (self::$_config['base_url']) {
+                $params['base_url'] = self::$_config['base_url'];
+            }
+
             $client        = DynamoDbClient::factory($params);
             self::$_client = $client;
         }
