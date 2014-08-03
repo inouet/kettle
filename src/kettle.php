@@ -247,10 +247,10 @@ class ORM
 
         $conditions = $this->_buildConditions($this->_where_conditions);
         if ($this->_filter_conditions) {
-            $filter_conditions = $this->_buildConditions($this->_filter_conditions);
+            $filter_conditions      = $this->_buildConditions($this->_filter_conditions);
             $options['QueryFilter'] = $filter_conditions;
         }
-        $result     = $this->query($conditions, $options);
+        $result = $this->query($conditions, $options);
 
         // scan($tableName, $filter, $limit = null)
         $array      = array();
@@ -621,6 +621,49 @@ class ORM
 
         }
 
+        return $this->_formatResults($items);
+    }
+
+    /**
+     * Retrieve all records using scan
+     *
+     * @param  array $options
+     *
+     * @return \Kettle\ORM[]
+     */
+    public function findAll(array $options = array())
+    {
+        if ($this->_filter_conditions) {
+            $filter_conditions     = $this->_buildConditions($this->_filter_conditions);
+            $options['ScanFilter'] = $filter_conditions;
+        }
+        $result     = $this->scan($options);
+        $array      = array();
+        $class_name = get_called_class();
+        foreach ($result as $row) {
+            $instance = self::factory($class_name);
+            $instance->hydrate($row);
+            $array[] = $instance;
+        }
+        return $array;
+    }
+
+    /**
+     * scan
+     *
+     * @param array $options
+     *
+     * @return array
+     *
+     */
+    public function scan(array $options = array())
+    {
+        $options['TableName'] = $this->_table_name;
+        $iterator             = self::$_client->getIterator('Scan', $options);
+        $items                = array();
+        foreach ($iterator as $item) {
+            $items[] = $item;
+        }
         return $this->_formatResults($items);
     }
 
@@ -1013,8 +1056,7 @@ class ORM
      */
     public function _buildConditions($conditions)
     {
-        $result     = array();
-        //$conditions = $this->_where_conditions;
+        $result = array();
         foreach ($conditions as $i => $condition) {
             $key      = $condition[0];
             $operator = $condition[1];
