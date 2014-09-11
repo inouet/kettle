@@ -712,17 +712,17 @@ class ORM
      *
      * @param array $values  associative array
      *                       $values = array(
-     *                       'name' => 'John',
-     *                       'age'  => 30,
+     *                          'name' => 'John',
+     *                          'age'  => 30,
      *                       );
      *
      * @param array $options
      *                       $options = array(
-     *                       'ReturnValues'                => 'string',
-     *                       'ReturnConsumedCapacity'      => 'string',
-     *                       'ReturnItemCollectionMetrics' => 'string',
-     *                       'Action' => array('age' => 'ADD'),
-     *                       'Exists' => array('age' => true),
+     *                          'ReturnValues'                => 'string',
+     *                          'ReturnConsumedCapacity'      => 'string',
+     *                          'ReturnItemCollectionMetrics' => 'string',
+     *                          'Action'                      => array('age' => 'ADD'),
+     *                          'Exists'                      => array('age' => true),
      *                       );
      *
      * @param array $expected
@@ -777,10 +777,11 @@ class ORM
      * Set ExclusiveStartKey for query parameter
      *
      * @param array $exclusive_start_key
-     *                                       $exclusive_start_key = array(
+     *
+     *              $exclusive_start_key = array(
      *                                       'key_name1' => 'value1',
      *                                       'key_name2' => 'value2',
-     *                                       );
+     *                                     );
      *
      */
     public function setExclusiveStartKey(array $exclusive_start_key)
@@ -848,16 +849,18 @@ class ORM
 
         foreach ($this->_schema as $column => $type) {
             $value = $this->get($column);
-            if (strlen($value) > 0) {
-                // column_name≤ETX>{type:value}<STX>
-                $data = array(strtolower($type) => $value);
-                $json = json_encode($data);
-                if ($json) {
-                    $text .= $column . $etx . $json . $stx;
-                }
+            if (strlen($value) == 0) {
+                continue;
             }
+            // column_name≤ETX>{type:value}<STX>
+            $data = array(strtolower($type) => $value);
+            $json = json_encode($data);
+            if (!$json) {
+                continue;
+            }
+            $text .= $column . $etx . $json . $stx;
         }
-        $text = rtrim($text, $stx); // remote last STX
+        $text = rtrim($text, $stx); // remove last STX
         $text .= "\n";
         return $text;
     }
@@ -891,7 +894,7 @@ class ORM
     //-----------------------------------------------
 
     /**
-     * @param $class_name
+     * @param string $class_name
      *
      * @return \Kettle\ORM instance of the ORM sub class
      */
@@ -1190,7 +1193,7 @@ class ORM
     protected static function _setupClient()
     {
         if (!self::$_client) {
-            $params        = array(
+            $params = array(
                 'key'    => self::$_config['key'],
                 'secret' => self::$_config['secret'],
                 'region' => self::$_config['region'],
