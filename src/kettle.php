@@ -832,6 +832,35 @@ class ORM
         return $this->_table_name;
     }
 
+    /**
+     * Convert to DynamoDB Import/Export Format.
+     *
+     * @link http://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-importexport-ddb-pipelinejson-verifydata2.html
+     *
+     * @return string
+     */
+    public function toImportFormat()
+    {
+        $text = "";
+        $etx  = chr(3); // ETX
+        $stx  = chr(2); // STX
+
+        foreach ($this->_schema as $column => $type) {
+            $value = $this->get($column);
+            if (strlen($value) > 0) {
+                // column_name≤ETX>{type:value}<STX>
+                $data = array(strtolower($type) => $value);
+                $json = json_encode($data);
+                if ($json) {
+                    $text .= $column . $etx . $json . $stx;
+                }
+            }
+        }
+        $text = rtrim($text, $stx); // remote last STX
+        $text .= "\n";
+        return $text;
+    }
+
     //-----------------------------------------------
     // MAGIC METHODS
     //-----------------------------------------------
