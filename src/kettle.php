@@ -675,6 +675,8 @@ class ORM
      * @param array $options
      * @param array $expected
      *
+     * @return \Guzzle\Service\Resource\Model
+     *
      * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_putItem
      */
     public function putItem(array $values, array $options = array(), array $expected = array())
@@ -726,6 +728,8 @@ class ORM
      *                       );
      *
      * @param array $expected
+     *
+     * @return \Guzzle\Service\Resource\Model
      *
      * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
      */
@@ -783,6 +787,7 @@ class ORM
      *                                       'key_name2' => 'value2',
      *                                     );
      *
+     * @return void
      */
     public function setExclusiveStartKey(array $exclusive_start_key)
     {
