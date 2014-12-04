@@ -712,20 +712,22 @@ class ORM
     /**
      * updateItem
      *
-     * @param array $values  associative array
-     *                       $values = array(
-     *                          'name' => 'John',
-     *                          'age'  => 30,
-     *                       );
+     * @param array $values     associative array
+     *
+     * $values = array(
+     *     'name' => 'John',
+     *     'age'  => 30,
+     * );
      *
      * @param array $options
-     *                       $options = array(
-     *                          'ReturnValues'                => 'string',
-     *                          'ReturnConsumedCapacity'      => 'string',
-     *                          'ReturnItemCollectionMetrics' => 'string',
-     *                          'Action'                      => array('age' => 'ADD'),
-     *                          'Exists'                      => array('age' => true),
-     *                       );
+     *
+     * $options = array(
+     *     'ReturnValues'                => 'string',
+     *     'ReturnConsumedCapacity'      => 'string',
+     *     'ReturnItemCollectionMetrics' => 'string',
+     *     'Action'                      => array('age' => 'ADD'),
+     *     'Exists'                      => array('age' => true),
+     * );
      *
      * @param array $expected
      *
@@ -944,16 +946,18 @@ class ORM
      * _formatAttributes
      *
      * @param array $array
-     *                  $array = array(
-     *                  'name' => 'John',
-     *                  'age'  => 20,
-     *                  );
+     *
+     * $array = array(
+     *     'name' => 'John',
+     *     'age'  => 20,
+     * );
      *
      * @return array $result
-     *           $result = array(
-     *                 'name' => array('S' => 'John'),
-     *                 'age'  => array('N' => 20),
-     *           );
+     *
+     * $result = array(
+     *     'name' => array('S' => 'John'),
+     *     'age'  => array('N' => 20),
+     * );
      */
     protected function _formatAttributes($array)
     {
@@ -966,29 +970,33 @@ class ORM
     }
 
     /**
+     * Format attribute for Update
      *
      * @param array $array
-     *                  $array = array(
-     *                  'name' => 'John',
-     *                  'age'  => 1,
-     *                  );
+     *
+     * $array = array(
+     *     'name' => 'John',
+     *     'age'  => 1,
+     * );
      *
      * @param array $actions
-     *                  $actions = array(
-     *                  'count' => 'ADD', // field_name => action_name
-     *                  );
+     *
+     * $actions = array(
+     *     'count' => 'ADD', // field_name => action_name
+     * );
      *
      * @return array $result
-     *               $result = array(
-     *                  'name' => array(
-     *                       'Action' => 'PUT',
-     *                       'Value'  => array('S' => 'John')
-     *                  ),
-     *                  'count' => array(
-     *                       'Action' => 'ADD',
-     *                       'Value'  => array('N' => 1)
-     *                  ),
-     *              );
+     *
+     * $result = array(
+     *     'name' => array(
+     *         'Action' => 'PUT',
+     *         'Value'  => array('S' => 'John')
+     *     ),
+     *     'count' => array(
+     *         'Action' => 'ADD',
+     *         'Value'  => array('N' => 1)
+     *     ),
+     * );
      */
     protected function _formatAttributeUpdates(array $array, array $actions = array())
     {
@@ -1007,6 +1015,35 @@ class ORM
         return $result;
     }
 
+    /**
+     * Format attribute for Expected
+     *
+     * @param array $array
+     *
+     * $array = array(
+     *     'name' => 'John',
+     *     'age'  => 30,
+     * );
+     *
+     * @param array $exists
+     *
+     * $exists = array(
+     *     'age' => true, // field_name => bool
+     * );
+     *
+     * @return array
+     *
+     * $result = array(
+     *     'name' => array(
+     *         'Value'  => array('S' => 'John')
+     *     ),
+     *     'age' => array(
+     *         'Value'  => array('N' => 30),
+     *         'Exists' => true
+     *     )
+     * );
+     *
+     */
     protected function _formatAttributeExpected(array $array, array $exists = array())
     {
         $result = array();
@@ -1046,17 +1083,17 @@ class ORM
      *
      * @param array $item
      *
-     *             $item = array(
-     *                   'name'   => array('S' => 'John'),
-     *                   'age'    => array('N' =>  30)
-     *             );
+     * $item = array(
+     *     'name'   => array('S' => 'John'),
+     *     'age'    => array('N' =>  30)
+     * );
      *
      * @return array $hash
      *
-     *             $item = array(
-     *                   'name'   => 'John',
-     *                   'age'    => 30,
-     *             );
+     * $hash = array(
+     *     'name'   => 'John',
+     *     'age'    => 30,
+     *  );
      */
     protected function _formatResult(array $item)
     {
