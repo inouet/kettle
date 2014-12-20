@@ -41,7 +41,9 @@ class ORM
         'base_url'         => null,
     );
 
-    // instance of DynamoDbClient class
+    /**
+     * @var Aws\DynamoDb\DynamoDbClient
+     */
     protected static $_client;
 
     // Log of all queries run, mapped by connection key, only populated if logging is enabled
@@ -712,7 +714,7 @@ class ORM
     /**
      * updateItem
      *
-     * @param array $values     associative array
+     * @param array $values associative array
      *
      * $values = array(
      *     'name' => 'John',
@@ -870,6 +872,56 @@ class ORM
         $text = rtrim($text, $stx); // remove last STX
         $text .= "\n";
         return $text;
+    }
+
+    /**
+     * Retrieve items in batches of up to 100
+     *
+     * @param array $key_values
+     *
+     *     HashKey:            [hash_key_value1, hash_key_value2 ..]
+     *     HashKey + RangeKey: [[hash_key_value1, range_key_value1] ...]
+     *
+     * @return self[]
+     */
+    public function batchGetItems(array $key_values)
+    {
+        $keys = array();
+        foreach ($key_values as $key_value) {
+            if ($this->_range_key) {
+                $conditions = array(
+                    $this->_hash_key  => $key_value[0],
+                    $this->_range_key => $key_value[1]
+                );
+            } else {
+                $_id        = is_array($key_value) ? $key_value[0] : $key_value;
+                $conditions = array(
+                    $this->_hash_key => $_id
+                );
+            }
+            $keys[] = $this->_formatAttributes($conditions);
+        }
+        $result           = self::$_client->batchGetItem(
+            array(
+                'RequestItems' => array(
+                    $this->_table_name => array(
+                        'Keys'           => $keys,
+                        'ConsistentRead' => true
+                    )
+                )
+            )
+        );
+        $items            = $result->getPath("Responses/{$this->_table_name}");
+        $class_name       = get_called_class();
+        $formatted_result = $this->_formatResults($items);
+
+        $array = array();
+        foreach ($formatted_result as $row) {
+            $instance = self::factory($class_name);
+            $instance->hydrate($row);
+            $array[] = $instance;
+        }
+        return $array;
     }
 
     //-----------------------------------------------
