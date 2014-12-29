@@ -36,6 +36,9 @@ ORM::configure("key",    'AWS_KEY');
 ORM::configure("secret", 'AWS_SECRET');
 ORM::configure("region", 'AWS_REGION');
 
+// In order to use DynamoDB Local, you need to set "base_url".
+// ORM::configure("base_url", 'http://localhost:8000/');
+
 ```
 
 2. Create Model Class
