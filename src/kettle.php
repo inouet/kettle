@@ -247,7 +247,6 @@ class ORM
      */
     public function findMany(array $options = array())
     {
-
         $conditions = $this->_buildConditions($this->_where_conditions);
         if ($this->_filter_conditions) {
             $filter_conditions      = $this->_buildConditions($this->_filter_conditions);
@@ -264,6 +263,23 @@ class ORM
             $array[] = $instance;
         }
         return $array;
+    }
+
+    /**
+     * Retrieve first result using query
+     *
+     * @param  array $options
+     *
+     * @return \Kettle\ORM|null
+     */
+    public function findFirst(array $options = array())
+    {
+        $this->_limit = 1;
+        $array        = $this->findMany($options);
+        if (is_array($array) && sizeof($array) > 0) {
+            return $array[0];
+        }
+        return null;
     }
 
     /**
