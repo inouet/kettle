@@ -129,7 +129,23 @@ foreach ($tweets as $tweet) {
 
 ```
 
-8. Find by Global Secondary Index
+8. Find first record
+-------------------
+
+```php
+<?php
+
+$tweet = ORM::factory('Tweets')
+        ->where('user_id', 1)
+        ->where('timestamp', '>', 1397264554)
+        ->findFirst();
+
+echo $tweet->text . PHP_EOL;
+
+```
+
+
+9. Find by Global Secondary Index
 -------------------
 
 ```php
@@ -144,7 +160,7 @@ $users = ORM::factory('User')
 ```
 
 
-9. Query Filtering
+10. Query Filtering
 -------------------
 
 ```php
