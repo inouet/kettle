@@ -274,7 +274,7 @@ class ORM
      */
     public function findFirst(array $options = array())
     {
-        $this->_limit = 1;
+        // $this->_limit = 1; # FIX: bug at using filter
         $array        = $this->findMany($options);
         if (is_array($array) && sizeof($array) > 0) {
             return $array[0];
