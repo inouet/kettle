@@ -39,6 +39,7 @@ class ORM
         'logging'          => false,
         'logging_response' => false,
         'base_url'         => null,
+        'version'          => '2012-08-10',
     );
 
     /**
@@ -275,7 +276,7 @@ class ORM
     public function findFirst(array $options = array())
     {
         // $this->_limit = 1; # FIX: bug at using filter
-        $array        = $this->findMany($options);
+        $array = $this->findMany($options);
         if (is_array($array) && sizeof($array) > 0) {
             return $array[0];
         }
@@ -1303,16 +1304,19 @@ class ORM
     protected static function _setupClient()
     {
         if (!self::$_client) {
-            $params = array(
-                'key'    => self::$_config['key'],
-                'secret' => self::$_config['secret'],
-                'region' => self::$_config['region'],
+            $params       = array();
+            $option_names = array(
+                'key',
+                'secret',
+                'region',
+                'version',
+                'base_url',
             );
-
-            if (self::$_config['base_url']) {
-                $params['base_url'] = self::$_config['base_url'];
+            foreach ($option_names as $option_name) {
+                if (isset(self::$_config[$option_name]) && self::$_config[$option_name]) {
+                    $params[$option_name] = self::$_config[$option_name];
+                }
             }
-
             $client        = DynamoDbClient::factory($params);
             self::$_client = $client;
         }
