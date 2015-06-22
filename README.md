@@ -68,9 +68,9 @@ class User extends ORM {
 <?php
 
 $user = ORM::factory('User')->create();
-$user->id = 1;
-$user->name = 'John';
-$user->age  = 20;
+$user->user_id = 1;
+$user->name    = 'John';
+$user->age     = 20;
 $user->save();
 
 ```
