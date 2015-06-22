@@ -823,6 +823,7 @@ class ORM
     public function setExclusiveStartKey(array $exclusive_start_key)
     {
         $this->_exclusive_start_key = $exclusive_start_key;
+        return $this;
     }
 
     /**
@@ -838,6 +839,7 @@ class ORM
         $this->_exclusive_start_key = null;
         $this->_query_index_name    = null;
         $this->_consistent_read     = false;
+        return $this;
     }
 
     /**
