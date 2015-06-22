@@ -818,7 +818,7 @@ class ORM
      *                                       'key_name2' => 'value2',
      *                                     );
      *
-     * @return void
+     * @return self
      */
     public function setExclusiveStartKey(array $exclusive_start_key)
     {
@@ -829,7 +829,7 @@ class ORM
     /**
      * Reset Where Conditions and Limit ..
      *
-     * @return void
+     * @return self
      */
     public function resetConditions()
     {
