@@ -15,6 +15,7 @@
 
 namespace Kettle;
 
+use Aws\Credentials\Credentials;
 use Aws\DynamoDb\DynamoDbClient;
 
 class ORM
@@ -39,11 +40,12 @@ class ORM
         'logging'          => false,
         'logging_response' => false,
         'base_url'         => null,
+        'endpoint'         => null,
         'version'          => '2012-08-10',
     );
 
     /**
-     * @var Aws\DynamoDb\DynamoDbClient
+     * @var \Aws\DynamoDb\DynamoDbClient
      */
     protected static $_client;
 
@@ -462,6 +464,10 @@ class ORM
     public function set($key, $value)
     {
         if (array_key_exists($key, $this->_schema)) {
+            $type = $this->_getDataType($key);
+            if ($type == 'S' || $type == 'N') {
+                $value = strval($value);
+            }
             $this->_data[$key] = $value;
         }
     }
@@ -507,7 +513,9 @@ class ORM
     public function setAdd($key, $value)
     {
         $type = $this->_getDataType($key);
-        if ($type == 'SS' || $type == 'NS' || $type == 'BS') {
+        if ($type == 'SS' || $type == 'NS') {
+            $this->_data[$key][] = strval($value);
+        } elseif ($type == 'BS') {
             $this->_data[$key][] = $value;
         }
     }
@@ -530,8 +538,10 @@ class ORM
      */
     public function hydrate(array $data = array())
     {
-        $this->_data          = $data;
-        $this->_data_original = $data;
+        foreach ($data as $key => $value) {
+            $this->set($key, $value);
+        }
+        $this->_data_original = $this->_data;
         return $this;
     }
 
@@ -1033,6 +1043,9 @@ class ORM
         $result = array();
         foreach ($array as $key => $value) {
             $type         = $this->_getDataType($key);
+            if ($type == 'S' || $type == 'N') {
+                $value = strval($value);
+            }
             $result[$key] = array($type => $value);
         }
         return $result;
@@ -1304,18 +1317,14 @@ class ORM
     protected static function _setupClient()
     {
         if (!self::$_client) {
-            $params       = array();
-            $option_names = array(
-                'key',
-                'secret',
-                'region',
-                'version',
-                'base_url',
-            );
-            foreach ($option_names as $option_name) {
-                if (isset(self::$_config[$option_name]) && self::$_config[$option_name]) {
-                    $params[$option_name] = self::$_config[$option_name];
-                }
+            $params = self::getConfig();
+            if (self::getConfig('key') && self::getConfig('secret')) {
+                $params['credentials'] = new Credentials(
+                    self::getConfig('key'), self::getConfig('secret')
+                );
+            }
+            if (self::getConfig('base_url')) {
+                $params['endpoint'] = self::getConfig('base_url');
             }
             $client        = DynamoDbClient::factory($params);
             self::$_client = $client;
