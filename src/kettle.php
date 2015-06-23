@@ -42,7 +42,9 @@ class ORM
         'base_url'         => null,
         'endpoint'         => null,
         'version'          => '2012-08-10',
-    );
+        'scheme'           => 'https',
+        'profile'          => null,
+     );
 
     /**
      * @var \Aws\DynamoDb\DynamoDbClient
@@ -1044,7 +1046,7 @@ class ORM
     {
         $result = array();
         foreach ($array as $key => $value) {
-            $type         = $this->_getDataType($key);
+            $type = $this->_getDataType($key);
             if ($type == 'S' || $type == 'N') {
                 $value = strval($value);
             }
