@@ -1,7 +1,7 @@
 Kettle
 ======
 
-Kettle is a lightweight object-dynamodb mapper for PHP5.
+Kettle is a lightweight object-dynamodb mapper for PHP.
 Kettle provides a simple interface to Amazon DynamoDB.
 
 See Some Code
