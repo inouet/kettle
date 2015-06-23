@@ -5,12 +5,13 @@
  *
  * http://github.com/inouet/kettle/
  *
- * Kettle is a lightweight object-dynamodb mapper for PHP5.
+ * Kettle is a lightweight object-dynamodb mapper for PHP.
  *
  * License
  *   This software is released under the MIT License, see LICENSE.txt.
  *
  * @package Kettle
+ * @author  Taiji Inoue <inudog@gmail.com>
  */
 
 namespace Kettle;
@@ -32,6 +33,10 @@ class ORM
      *          - region
      *          - logging
      *          - logging_response
+     *          - endpoint/base_url  (for DynamoDB local)
+     *          - version
+     *          - scheme
+     *          - profile   (AWS Credential Name)
      */
     protected static $_config = array(
         'key'              => null,
