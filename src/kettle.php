@@ -1335,7 +1335,7 @@ class ORM
             if (self::getConfig('base_url')) {
                 $params['endpoint'] = self::getConfig('base_url');
             }
-            $client        = DynamoDbClient::factory($params);
+            $client = new DynamoDbClient($params);
             self::$_client = $client;
         }
     }
