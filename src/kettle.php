@@ -22,6 +22,8 @@ use Aws\DynamoDb\DynamoDbClient;
 class ORM
 {
 
+    const DEFAULT_CONNECTION = 'default';
+
     // --------------------------
 
     /**
@@ -31,30 +33,28 @@ class ORM
      *          - key
      *          - secret
      *          - region
-     *          - logging
-     *          - logging_response
      *          - endpoint/base_url  (for DynamoDB local)
      *          - version
      *          - scheme
      *          - profile   (AWS Credential Name)
      */
-    protected static $_config = array(
-        'key'              => null,
-        'secret'           => null,
-        'region'           => null,
-        'logging'          => false,
-        'logging_response' => false,
-        'base_url'         => null,
-        'endpoint'         => null,
-        'version'          => '2012-08-10',
-        'scheme'           => 'https',
-        'profile'          => null,
-     );
+    protected static $_config_default = array(
+        'key'      => null,
+        'secret'   => null,
+        'region'   => null,
+        'base_url' => null,
+        'endpoint' => null,
+        'version'  => '2012-08-10',
+        'scheme'   => 'https',
+        'profile'  => null,
+    );
+
+    protected static $_config = array();
 
     /**
-     * @var \Aws\DynamoDb\DynamoDbClient
+     * @var \Aws\DynamoDb\DynamoDbClient[]
      */
-    protected static $_client;
+    protected static $_client = array();
 
     // Log of all queries run, mapped by connection key, only populated if logging is enabled
     protected static $_query_log = array();
@@ -69,6 +69,9 @@ class ORM
 
     // RangeKey
     protected $_range_key;
+
+    // ConnectionName
+    protected $_connection_name = self::DEFAULT_CONNECTION;
 
     /**
      * data schema
@@ -136,9 +139,12 @@ class ORM
     //-----------------------------------------------
     // PUBLIC METHODS
     //-----------------------------------------------
-    public static function configure($key, $value)
+    public static function configure($key, $value, $connection_name = self::DEFAULT_CONNECTION)
     {
-        self::$_config[$key] = $value;
+        if (!isset(self::$_config[$connection_name])) {
+            self::$_config[$connection_name] = self::$_config_default;
+        }
+        self::$_config[$connection_name][$key] = $value;
     }
 
     /**
@@ -146,12 +152,12 @@ class ORM
      *
      * @param string $key
      */
-    public static function getConfig($key = null)
+    public static function getConfig($key = null, $connection_name = self::DEFAULT_CONNECTION)
     {
         if ($key) {
-            return isset(self::$_config[$key]) ? self::$_config[$key] : null;
+            return isset(self::$_config[$connection_name][$key]) ? self::$_config[$connection_name][$key] : null;
         } else {
-            return self::$_config;
+            return self::$_config[$connection_name];
         }
     }
 
@@ -161,6 +167,7 @@ class ORM
      * set to true. Otherwise, returned array will be empty.
      *
      * @return array
+     * @deprecated
      */
     public static function getQueryLog()
     {
@@ -174,6 +181,7 @@ class ORM
      * Get last query
      *
      * @return array
+     * @deprecated
      */
     public static function getLastQuery()
     {
@@ -181,6 +189,21 @@ class ORM
             return array();
         }
         return end(self::$_query_log);
+    }
+
+    /**
+     * Get connection name
+     *
+     * @return string
+     */
+    public function getConnectionName()
+    {
+        return $this->_connection_name;
+    }
+
+    public function setConnectionName($connection_name)
+    {
+        $this->_connection_name = $connection_name;
     }
 
     /**
@@ -233,8 +256,8 @@ class ORM
             }
         }
 
-        $item = self::$_client->getItem($args);
-        self::_logQuery('getItem', $args, $item);
+        $_client = $this->getClient();
+        $item    = $_client->getItem($args);
 
         if (!is_array($item['Item'])) {
             return null;
@@ -350,8 +373,8 @@ class ORM
             'ReturnValues' => 'ALL_OLD',
         );
 
-        $result = self::$_client->deleteItem($args);
-        self::_logQuery('deleteItem', $args, $result);
+        $_client = $this->getClient();
+        $result  = $_client->deleteItem($args);
         return $result;
     }
 
@@ -569,7 +592,8 @@ class ORM
      */
     public function getClient()
     {
-        return self::$_client;
+        $client = self::$_client[$this->_connection_name];
+        return $client;
     }
 
     /**
@@ -619,8 +643,8 @@ class ORM
 
             $args['Limit'] = intval($this->_limit);
 
-            $result = self::$_client->query($args);
-            self::_logQuery("query", $args, $result);
+            $_client = $this->getClient();
+            $result  = $_client->query($args);
 
             // $result is "Guzzle\Service\Resource\Model"
             // and $result has next keys
@@ -645,8 +669,9 @@ class ORM
             $this->_result_count = $result_count;
 
         } else { // No limit (Use Iterator)
-            $iterator = self::$_client->getIterator('Query', $args);
-            self::_logQuery('getIterator', $args, $iterator);
+            $_client  = $this->getClient();
+            $iterator = $_client->getIterator('Query', $args);
+
             // $iterator is "Aws\Common\Iterator\AwsResourceIterator"
             $items = array();
             foreach ($iterator as $item) {
@@ -696,8 +721,10 @@ class ORM
     public function scan(array $options = array())
     {
         $options['TableName'] = $this->_table_name;
-        $iterator             = self::$_client->getIterator('Scan', $options);
-        $items                = array();
+        $_client              = $this->getClient();
+
+        $iterator = $_client->getIterator('Scan', $options);
+        $items    = array();
         foreach ($iterator as $item) {
             $items[] = $item;
         }
@@ -739,8 +766,8 @@ class ORM
             }
         }
 
-        $item = self::$_client->putItem($args);
-        self::_logQuery('putItem', $args, $item);
+        $_client = $this->getClient();
+        $item    = $_client->putItem($args);
 
         return $item;
     }
@@ -810,8 +837,9 @@ class ORM
             }
         }
 
-        $item = self::$_client->updateItem($args);
-        self::_logQuery('updateItem', $args, $item);
+        $_client = $this->getClient();
+        $item    = $_client->updateItem($args);
+
         return $item;
     }
 
@@ -937,7 +965,8 @@ class ORM
             }
             $keys[] = $this->_formatAttributes($conditions);
         }
-        $result           = self::$_client->batchGetItem(
+        $_client          = $this->getClient();
+        $result           = $_client->batchGetItem(
             array(
                 'RequestItems' => array(
                     $this->_table_name => array(
@@ -993,10 +1022,14 @@ class ORM
      *
      * @return \Kettle\ORM instance of the ORM sub class
      */
-    public static function factory($class_name)
+    public static function factory($class_name, $connection_name = self::DEFAULT_CONNECTION)
     {
-        self::_setupClient();
-        return new $class_name();
+        self::_setupClient($connection_name);
+
+        /** @var self $object */
+        $object = new $class_name();
+        $object->setConnectionName($connection_name);
+        return $object;
     }
 
     //-----------------------------------------------
@@ -1323,38 +1356,33 @@ class ORM
     //-----------------------------------------------
 
     // called from static factory method.
-    protected static function _setupClient()
+    protected static function _setupClient($connection_name = self::DEFAULT_CONNECTION)
     {
-        if (!self::$_client) {
-            $params = self::getConfig();
-            if (self::getConfig('key') && self::getConfig('secret')) {
+        if (!isset(self::$_client[$connection_name])) {
+            $params = self::getConfig(null, $connection_name);
+
+            if (self::getConfig('key', $connection_name) && self::getConfig('secret', $connection_name)) {
                 $params['credentials'] = new Credentials(
-                    self::getConfig('key'), self::getConfig('secret')
+                    self::getConfig('key', $connection_name), self::getConfig('secret', $connection_name)
                 );
             }
-            if (self::getConfig('base_url')) {
-                $params['endpoint'] = self::getConfig('base_url');
+            if (self::getConfig('base_url', $connection_name)) {
+                $params['endpoint'] = self::getConfig('base_url', $connection_name);
             }
-            $client = new DynamoDbClient($params);
-            self::$_client = $client;
+
+            $client                          = new DynamoDbClient($params);
+            self::$_client[$connection_name] = $client;
         }
     }
 
+    /**
+     * @deprecated
+     */
     protected static function _logQuery($query, array $args, $response)
     {
-        if (!self::getConfig('logging')) {
-            return false;
-        }
-        $log = array("query" => $query, "args" => $args);
-
-        if (self::getConfig('logging_response')) {
-            $log["response"] = $response;
-        }
-        self::$_query_log[] = $log;
     }
 }
 
 class KettleException extends \Exception
 {
 }
-
