@@ -25,7 +25,25 @@ foreach ($tweets as $tweet) {
 
 ```
 
-1. Configuration
+1. Installation
+-------------------
+
+Package is available on Packagist, you can install it using Composer.
+
+```
+$ cat <<EOF > composer.json
+{
+    "require": {
+        "kettle/dynamodb-orm": "0.2.0"
+    }
+}
+EOF
+
+$ composer install
+```
+
+
+2. Configuration
 -------------------
 
 ```php
@@ -41,7 +59,21 @@ ORM::configure("region", 'AWS_REGION');
 
 ```
 
-2. Create Model Class
+If you are using multiple aws account, use as follows.
+
+```php
+<?php
+use Kettle\ORM;
+
+ORM::configure("key",    'AWS_KEY',    'account-2');
+ORM::configure("secret", 'AWS_SECRET', 'account-2');
+ORM::configure("region", 'AWS_REGION', 'account-2');
+
+$user = ORM::factory('User', 'account-2');
+
+```
+
+3. Create Model Class
 -------------------
 
 ```php
@@ -61,7 +93,7 @@ class User extends ORM {
 
 ```
 
-3. Create
+4. Create
 -------------------
 
 ```php
@@ -75,7 +107,7 @@ $user->save();
 
 ```
 
-4. Retrieve
+5. Retrieve
 -------------------
 
 ```php
@@ -88,7 +120,7 @@ print_r($user->asArray());
 
 ```
 
-5. Update
+6. Update
 -------------------
 
 ```php
@@ -100,7 +132,7 @@ $user->save();
 
 ```
 
-6. Delete
+7. Delete
 -------------------
 
 ```php
@@ -112,7 +144,7 @@ $user->delete();
 ```
 
 
-7. Find
+8. Find
 -------------------
 
 ```php
@@ -129,7 +161,7 @@ foreach ($tweets as $tweet) {
 
 ```
 
-8. Find first record
+9. Find first record
 -------------------
 
 ```php
@@ -145,7 +177,7 @@ echo $tweet->text . PHP_EOL;
 ```
 
 
-9. Find by Global Secondary Index
+10. Find by Global Secondary Index
 -------------------
 
 ```php
@@ -160,7 +192,7 @@ $users = ORM::factory('User')
 ```
 
 
-10. Query Filtering
+11. Query Filtering
 -------------------
 
 ```php
