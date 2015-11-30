@@ -266,7 +266,7 @@ class ORM
         $result = $this->_formatResult($item['Item']);
 
         $class_name = get_called_class();
-        $instance   = self::factory($class_name);
+        $instance   = self::factory($class_name, $this->_connection_name);
         $instance->hydrate($result);
         return $instance;
     }
@@ -291,7 +291,7 @@ class ORM
         $array      = array();
         $class_name = get_called_class();
         foreach ($result as $row) {
-            $instance = self::factory($class_name);
+            $instance = self::factory($class_name, $this->_connection_name);
             $instance->hydrate($row);
             $array[] = $instance;
         }
@@ -703,7 +703,7 @@ class ORM
         $array      = array();
         $class_name = get_called_class();
         foreach ($result as $row) {
-            $instance = self::factory($class_name);
+            $instance = self::factory($class_name, $this->_connection_name);
             $instance->hydrate($row);
             $array[] = $instance;
         }
@@ -982,7 +982,7 @@ class ORM
 
         $array = array();
         foreach ($formatted_result as $row) {
-            $instance = self::factory($class_name);
+            $instance = self::factory($class_name, $this->_connection_name);
             $instance->hydrate($row);
             $array[] = $instance;
         }
