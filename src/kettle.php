@@ -989,6 +989,23 @@ class ORM
         return $array;
     }
 
+    /**
+     * Retrieve findMany result as array
+     *
+     * @param array $options
+     *
+     * @return array
+     */
+    public function findArray(array $options = array())
+    {
+        $entity_list = $this->findMany($options);
+        $result      = array();
+        foreach ($entity_list as $entity) {
+            $result[] = $entity->asArray();
+        }
+        return $result;
+    }
+
     //-----------------------------------------------
     // MAGIC METHODS
     //-----------------------------------------------
