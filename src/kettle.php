@@ -223,7 +223,7 @@ class ORM
      * @param  string $range_key_value
      * @param  array  $options
      *
-     * @return \Kettle\ORM instance of the ORM sub class
+     * @return $this instance of the ORM sub class
      */
     public function findOne($hash_key_value, $range_key_value = null, array $options = array())
     {
@@ -383,7 +383,7 @@ class ORM
      *
      * @param  int $limit
      *
-     * @return self
+     * @return $this
      */
     public function limit($limit)
     {
@@ -396,7 +396,7 @@ class ORM
      *
      * @param  string $index_name
      *
-     * @return self
+     * @return $this
      */
     public function index($index_name)
     {
@@ -409,7 +409,7 @@ class ORM
      *
      * @param bool $consistent_read
      *
-     * @return self
+     * @return $this
      */
     public function consistent($consistent_read = true)
     {
@@ -438,7 +438,7 @@ class ORM
      *    $user->where('name', 'John');
      *    $user->where('age', '>', 20);
      *
-     * @return self
+     * @return $this
      */
     public function where()
     {
@@ -467,7 +467,7 @@ class ORM
      *    $user->filter('name', 'John');
      *    $user->filter('age', '>', 20);
      *
-     * @return self
+     * @return $this
      */
     public function filter()
     {
@@ -553,7 +553,7 @@ class ORM
     /**
      * @param array $data
      *
-     * @return self
+     * @return $this
      */
     public function create(array $data = array())
     {
@@ -564,7 +564,7 @@ class ORM
     /**
      * @param array $data
      *
-     * @return self
+     * @return $this
      */
     public function hydrate(array $data = array())
     {
@@ -691,7 +691,7 @@ class ORM
      *
      * @param  array $options
      *
-     * @return \Kettle\ORM[]
+     * @return $this[]
      */
     public function findAll(array $options = array())
     {
@@ -853,7 +853,7 @@ class ORM
      *                                       'key_name2' => 'value2',
      *                                     );
      *
-     * @return self
+     * @return $this
      */
     public function setExclusiveStartKey(array $exclusive_start_key)
     {
@@ -864,7 +864,7 @@ class ORM
     /**
      * Reset Where Conditions and Limit ..
      *
-     * @return self
+     * @return $this
      */
     public function resetConditions()
     {
@@ -946,7 +946,7 @@ class ORM
      *     HashKey:            [hash_key_value1, hash_key_value2 ..]
      *     HashKey + RangeKey: [[hash_key_value1, range_key_value1] ...]
      *
-     * @return self[]
+     * @return $this[]
      */
     public function batchGetItems(array $key_values)
     {
