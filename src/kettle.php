@@ -276,7 +276,7 @@ class ORM
      *
      * @param  array $options
      *
-     * @return \Kettle\ORM[]
+     * @return $this[]
      */
     public function findMany(array $options = array())
     {
@@ -303,7 +303,7 @@ class ORM
      *
      * @param  array $options
      *
-     * @return \Kettle\ORM|null
+     * @return $this|null
      */
     public function findFirst(array $options = array())
     {
@@ -1037,7 +1037,7 @@ class ORM
     /**
      * @param string $class_name
      *
-     * @return \Kettle\ORM instance of the ORM sub class
+     * @return $this instance of the ORM sub class
      */
     public static function factory($class_name, $connection_name = self::DEFAULT_CONNECTION)
     {
