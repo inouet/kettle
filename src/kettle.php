@@ -151,6 +151,8 @@ class ORM
      * Retrieve configuration options by key, or as whole array.
      *
      * @param string $key
+     *
+     * @return string|array
      */
     public static function getConfig($key = null, $connection_name = self::DEFAULT_CONNECTION)
     {
@@ -224,6 +226,7 @@ class ORM
      * @param  array  $options
      *
      * @return $this instance of the ORM sub class
+     * @throws \Exception
      */
     public function findOne($hash_key_value, $range_key_value = null, array $options = array())
     {
@@ -328,6 +331,7 @@ class ORM
      *     'ForceUpdate'                 => false, // If true No ConditionalCheck
      *  );
      *
+     * @return \Aws\Result
      */
     public function save(array $options = array())
     {
@@ -738,7 +742,7 @@ class ORM
      * @param array $options
      * @param array $expected
      *
-     * @return \Guzzle\Service\Resource\Model
+     * @return \Aws\Result
      *
      * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_putItem
      */
@@ -794,7 +798,7 @@ class ORM
      *
      * @param array $expected
      *
-     * @return \Guzzle\Service\Resource\Model
+     * @return \AWS\Result
      *
      * @link http://docs.aws.amazon.com/aws-sdk-php/latest/class-Aws.DynamoDb.DynamoDbClient.html#_updateItem
      */
