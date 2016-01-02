@@ -28,6 +28,6 @@
     "autoload": {
         "classmap": ["src/kettle.php"]
     },
-    "bin": ["bin/kettle-skelton.php"]
+    "bin": ["bin/kettle-skeleton.php"]
 }
 
