@@ -8,7 +8,18 @@
  *   php vendor/bin/kettle-skeleton.php --table-name TABLE_NAME --region ap-northeast-1 > TableName.php
  *
  */
-require __DIR__ . '/../vendor/autoload.php';
+
+$files = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+foreach ($files as $file) {
+    if (file_exists($file)) {
+        require $file;
+        break;
+    }
+}
 
 use Aws\DynamoDb\DynamoDbClient;
 
