@@ -83,6 +83,11 @@ function main()
 
 use Kettle\ORM;
 
+/**
+ * %CLASS_NAME%
+ *
+ * %PROPERTY%
+ */
 class %CLASS_NAME% extends ORM
 {
     protected $_table_name = '%TABLE_NAME%';
@@ -191,6 +196,23 @@ EOT;
     }
     $replace['%LOCAL_SECONDARY_INDEXES%'] = $code;
 
+    //---------------------------------------
+    // @property
+    //---------------------------------------
+
+    $properties = [];
+    $types      = [
+        'S' => 'string',
+        'N' => 'int',
+        'B' => 'string'
+    ];
+    foreach ($schema as $key => $val) {
+        $type         = isset($types[$val]) ? $types[$val] : 'string';
+        $properties[] = sprintf("@property %s \$%s\n", str_pad($type, 6, ' ', STR_PAD_RIGHT), $key);
+    }
+
+    $property_code         = join(' * ', $properties);
+    $replace['%PROPERTY%'] = rtrim($property_code);
 
     $result = build_skeleton_code($template, $replace);
     echo $result;
