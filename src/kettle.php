@@ -73,6 +73,12 @@ class ORM
     // ConnectionName
     protected $_connection_name = self::DEFAULT_CONNECTION;
 
+    // GlobalSecondaryIndex
+    protected $_global_secondary_indexes = [];
+
+    // LocalSecondaryIndex
+    protected $_local_secondary_indexes = [];
+
     /**
      * data schema
      *
@@ -1040,6 +1046,7 @@ class ORM
 
     /**
      * @param string $class_name
+     * @param string $connection_name
      *
      * @return $this instance of the ORM sub class
      */
@@ -1252,6 +1259,8 @@ class ORM
 
     /**
      * Build where conditions
+     *
+     * @param array $conditions
      *
      * $_where_conditions = array(
      *    0 => array('name', 'EQ', 'John'),
