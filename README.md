@@ -93,6 +93,15 @@ class User extends ORM {
 
 ```
 
+If you use a generator, you can also create an class as follows.
+
+```
+$ php bin/kettle-skeleton.php --table-name user --region ap-northeast-1 > User.php
+```
+
+Table must have been created in advance.
+Because this generator generates a class based on the information and data collected by the "describeTable" and "scan" operation.
+
 4. Create
 -------------------
 
@@ -204,4 +213,3 @@ $tweets = ORM::factory('Tweets')
           ->findMany();
 
 ```
-
