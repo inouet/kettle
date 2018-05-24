@@ -1,7 +1,7 @@
 {
     "name": "kettle/dynamodb-orm",
     "type": "library",
-    "description": "A lightweight object-dynamodb mapper for PHP5",
+    "description": "A lightweight object-dynamodb mapper for PHP",
     "keywords": ["kettle", "orm", "dynamodb", "aws"],
     "homepage": "http://github.com/inouet/",
     "support": {
