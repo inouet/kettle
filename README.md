@@ -34,7 +34,7 @@ Package is available on Packagist, you can install it using Composer.
 $ cat <<EOF > composer.json
 {
     "require": {
-        "kettle/dynamodb-orm": "0.2.0"
+        "kettle/dynamodb-orm": "0.2.*"
     }
 }
 EOF
