@@ -1,0 +1,19 @@
+version: "3"
+services:
+    php74:
+      build: ${PWD}/test/docker
+      image: php74-cli
+      container_name: php74-kettle
+      tty: true
+      volumes:
+        - ${PWD}:/opt/project
+
+    dynamodb-local:
+      container_name: dynamodb-local
+      image: amazon/dynamodb-local:latest
+      user: root
+      command: -jar DynamoDBLocal.jar -sharedDb -dbPath /data
+      volumes:
+        - ${PWD}/test/dynamodb-local-data:/data
+      ports:
+        - "8000:8000"
